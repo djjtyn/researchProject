@@ -69,8 +69,10 @@ public class HospitalSimulation {
 			//Assign each application module to its fog device
 			for(FogDevice device : fogDevices){
 				if(device.getName().startsWith("PatientMonitor-")){
+					moduleMapping.addModuleToDevice("heartRateModule", device.getName());	//Attach module to read heart rate sensor data
+					
 					//Assign modules to each individual PatientMonitor device to allow each monitor to monitor sensor data
-					moduleMapping.addModuleToDevice("patientVitalsModule", device.getName());
+					//moduleMapping.addModuleToDevice("patientVitalsModule", device.getName());
 					
 					
 					//moduleMapping.addModuleToDevice("monitorSinglePatientVitals", device.getName());
@@ -108,16 +110,18 @@ public class HospitalSimulation {
 	//Method to create all fog devices for the simulation
 	private static void createFogDevices(int userId, String appId) {
 		//Create Cloud Device at level 0
-		FogDevice cloud = createFogDevice("cloud", 44800, 40000, 100, 10000, 0, 0.01, 16*103, 16*83.25);
+		FogDevice cloud = createFogDevice("cloud", "cloud", 0);	//createFogDevice method required device type and its level as arguments
 		cloud.setParentId(-1);
 		fogDevices.add(cloud);
-		//Create proxy device at level 1
-		FogDevice proxy = createFogDevice("proxy-server", 2800, 4000, 10000, 10000, 1, 0.0, 107.339, 83.4333);
+		
+		//Create proxy-server device at level 1
+		FogDevice proxy = createFogDevice("proxy-server","Pi3BPlus", 1);
 		proxy.setParentId(cloud.getId());
 		proxy.setUplinkLatency(100); // latency of connection between proxy server and cloud is 100 ms
 		fogDevices.add(proxy);
-		String wingIdentifier;
+		
 		//Loop through each hospital wing and assign patient monitor and smart bin components
+		String wingIdentifier;
 		for(int i=0;i<numOfHospitalWings;i++){
 			//Switch Statement to assign hospital wing identifier value
 			switch(i) {
@@ -135,68 +139,73 @@ public class HospitalSimulation {
 		}
 	}
 	
-	private static FogDevice createFogDevice(String nodeName, long mips, int ram, long upBw, long downBw, int level, double ratePerMips, double busyPower, double idlePower) {
-	
-		List<Pe> peList = new ArrayList<Pe>();
-
-		// 3. Create PEs and add these into a list.
-		peList.add(new Pe(0, new PeProvisionerOverbooking(mips))); // need to store Pe id and MIPS Rating
-
-		int hostId = FogUtils.generateEntityId();
-		long storage = 1000000; // host storage
-		int bw = 10000;
-
-		PowerHost host = new PowerHost(hostId, new RamProvisionerSimple(ram), new BwProvisionerOverbooking(bw), storage, peList, new StreamOperatorScheduler(peList), new FogLinearPowerModel(busyPower, idlePower));
-
-		List<Host> hostList = new ArrayList<Host>();
-		hostList.add(host);
-
-		String arch = "x86"; // system architecture
-		String os = "Linux"; // operating system
-		String vmm = "Xen";
-		double time_zone = 10.0; // time zone this resource located
-		double cost = 3.0; // the cost of using processing in this resource
-		double costPerMem = 0.05; // the cost of using memory in this resource
-		double costPerStorage = 0.001; // the cost of using storage in this
-										// resource
-		double costPerBw = 0.0; // the cost of using bw in this resource
-		LinkedList<Storage> storageList = new LinkedList<Storage>(); // we are not adding SAN
-													// devices by now
-
-		FogDeviceCharacteristics characteristics = new FogDeviceCharacteristics(
-				arch, os, vmm, host, time_zone, cost, costPerMem,
-				costPerStorage, costPerBw);
-
-		FogDevice fogdevice = null;
+	private static FogDevice createFogDevice(String nodeName, String deviceType, int level) {
 		try {
-			fogdevice = new FogDevice(nodeName, characteristics, 
-					new AppModuleAllocationPolicy(hostList), storageList, 10, upBw, downBw, 0, ratePerMips);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+			//Default iFogSim provided variable values
+			List<Pe> peList = new ArrayList<Pe>();
+			int hostId = FogUtils.generateEntityId();
+			long storage = 1000000; // host storage
+			int bw = 10000;
+			List<Host> hostList = new ArrayList<Host>();
+			String arch = "x86"; // system architecture
+			String os = "Linux"; // operating system
+			String vmm = "Xen";
+			double time_zone = 10.0; // time zone this resource located
+			double cost = 3.0; // the cost of using processing in this resource
+			double costPerMem = 0.05; // the cost of using memory in this resource
+			double costPerStorage = 0.001; // the cost of using storage in this resource
+			double costPerBw = 0.0; // the cost of using bw in this resource
+			LinkedList<Storage> storageList = new LinkedList<Storage>(); // we are not adding SAN devices by now
 		
-		fogdevice.setLevel(level);
-		return fogdevice;
+			// Check which device type to be created and instantiante a FogDevice for it
+			if(deviceType == "cloud") {
+				//Cloud variable values will use default values provided by iFogSim
+				peList.add(new Pe(0, new PeProvisionerOverbooking(44800))); 
+				PowerHost host = new PowerHost(hostId, new RamProvisionerSimple(40000), new BwProvisionerOverbooking(bw), storage, peList, new StreamOperatorScheduler(peList), new FogLinearPowerModel(16*103, 16*83.25));
+				hostList.add(host);
+				FogDeviceCharacteristics characteristics = new FogDeviceCharacteristics(arch, os, vmm, host, time_zone, cost, costPerMem, costPerStorage, costPerBw);
+				FogDevice fogDevice = new FogDevice(nodeName, characteristics, new AppModuleAllocationPolicy(hostList), storageList, 10, 100, 10000, 0, 0.0);
+				fogDevice.setLevel(level);
+				return fogDevice;
+			}
+			if(deviceType == "Pi3BPlus") {
+				//Proxy variable values will use default values provided by iFogSim
+				peList.add(new Pe(0, new PeProvisionerOverbooking(2800))); 
+				PowerHost host = new PowerHost(hostId, new RamProvisionerSimple(4000), new BwProvisionerOverbooking(bw), storage, peList, new StreamOperatorScheduler(peList), new FogLinearPowerModel(107.339, 83.4333));
+				hostList.add(host);
+				FogDeviceCharacteristics characteristics = new FogDeviceCharacteristics(arch, os, vmm, host, time_zone, cost, costPerMem, costPerStorage, costPerBw);
+				FogDevice fogDevice = new FogDevice(nodeName, characteristics, new AppModuleAllocationPolicy(hostList), storageList, 10, 10000, 10000, 0, 0.01);
+				fogDevice.setLevel(level);
+				return fogDevice;
+			}
+		} catch(Exception e) {
+			System.out.println("There was an issue creating the " + deviceType + " device at level " + level);
+			e.printStackTrace();
+			return null;
+		}
+		return null;
 	}
 	
 	private static FogDevice addHospitalWing(String id, int userId, String appId, int parentId){
 		//Create router device for each hospital wing at level 2
-		FogDevice router = createFogDevice("router-"+id, 2800, 4000, 10000, 10000, 2, 0.0, 107.339, 83.4333);
+		FogDevice router = createFogDevice("router-"+id, "Pi3BPlus", 2);
 		router.setUplinkLatency(2); // latency of connection between router and proxy server is 2 ms
 		router.setParentId(parentId);
 		fogDevices.add(router);
 		
 		//PATIENT MONITOR COMPONENTS
 		//Create PatientMonitor Master Components at level 3
-		FogDevice patientMonitorMaster = createFogDevice("patientMonitorMaster-"+id, 2800, 4000, 10000, 10000, 3, 0.0, 107.339, 83.4333);
+		FogDevice patientMonitorMaster = createFogDevice("patientMonitorMaster-"+id, "Pi3BPlus", 3);
 		patientMonitorMaster.setUplinkLatency(2);
 		patientMonitorMaster.setParentId(router.getId());
 		fogDevices.add(patientMonitorMaster);	
+		
 		//Create PatientMonitor Orchestrator at level 4 as parent for each patient monitor device
-		FogDevice patientMonitorOrchestrator = createFogDevice("patientMonitorOrchestator-"+id, 2800, 4000, 10000, 10000, 4, 0.0, 107.339, 83.4333);
+		FogDevice patientMonitorOrchestrator = createFogDevice("patientMonitorOrchestator-"+id, "Pi3BPlus", 4);
 		patientMonitorOrchestrator.setParentId(patientMonitorMaster.getId());
 		patientMonitorOrchestrator.setUplinkLatency(2);
 		fogDevices.add(patientMonitorOrchestrator);
+		
 		//Instantiate patient monitor devices
 		for(int i=0;i<numOfpatientsPerWing;i++){
 			String patientMonitorUnitId = "PatientMonitor-"+ (i+1) + ":" + id;
@@ -204,11 +213,11 @@ public class HospitalSimulation {
 			patientMonitor.setUplinkLatency(2); // latency of connection between camera and router is 2 ms
 			fogDevices.add(patientMonitor);
 		}
-		//Create an actuator for viewing all patient monitor units
-		Actuator patientMonitorDisplay = new Actuator(id+"-patientMasterdisplay", userId, appId, "PATIENTMONITORMASTERDISPLAY"); 
-		patientMonitorDisplay.setGatewayDeviceId(patientMonitorMaster.getId());
-		patientMonitorDisplay.setLatency(1.0); 
-		actuators.add(patientMonitorDisplay);
+//		//Create an actuator for viewing all patient monitor units
+//		Actuator patientMonitorDisplay = new Actuator(id+"-patientMasterdisplay", userId, appId, "PATIENTMONITORMASTERDISPLAY"); 
+//		patientMonitorDisplay.setGatewayDeviceId(patientMonitorMaster.getId());
+//		patientMonitorDisplay.setLatency(1.0); 
+//		actuators.add(patientMonitorDisplay);
 		
 //		//BIN COMPONENTS
 //		//Create bin Master Components at level 3
@@ -230,44 +239,41 @@ public class HospitalSimulation {
 		return router;
 	}
 	
-	
-	private static void createHeartMonitor(String id, int userId, String appId, int parentId) {
-		FogDevice heartMonitor = createFogDevice(id,2800, 1000, 10000, 10000, 6, 0, 87.53, 82.44);
-		heartMonitor.setParentId(parentId);
-		heartMonitor.setUplinkLatency(2);
-		fogDevices.add(heartMonitor);
-		// Each patient monitor will receive data from heart rate, blood pressure, o2 saturation and respiratory rate sensors
+	private static void addPatientMonitorSensors(String id, int userId, String appId, int parentId) {
+		//Patient Monitor Sensors
 		Sensor heartRateSensor = new Sensor(id+"-hrSensor", "heartRate", userId, appId, new DeterministicDistribution(5));
-		heartRateSensor.setGatewayDeviceId(heartMonitor.getId());
+		heartRateSensor.setGatewayDeviceId(parentId);
 		heartRateSensor.setLatency(1.0);
 		sensors.add(heartRateSensor);
-		// Patient monitors will have a display to output their sensor data
-		Actuator patientMonitorDisplay = new Actuator(id+"-display", userId, appId, "PATIENTMONITORDISPLAY");
-		patientMonitorDisplay.setGatewayDeviceId(parentId);
-		patientMonitorDisplay.setLatency(1.0); 
-		actuators.add(patientMonitorDisplay);	
+		
+//		Sensor bloodPressureSensor = new Sensor(id+"-bpSensor", "bloodPressure", userId, appId, new DeterministicDistribution(5));
+//		bloodPressureSensor.setGatewayDeviceId(parentId);
+//		bloodPressureSensor.setLatency(1.0);
+//		sensors.add(bloodPressureSensor);
+//		
+//		Sensor respiratoryRateSensor = new Sensor(id+"-rrSensor", "RESPIRATORYRATE", userId, appId, new DeterministicDistribution(5));
+//		respiratoryRateSensor.setGatewayDeviceId(parentId);
+//		respiratoryRateSensor.setLatency(1.0);
+//		sensors.add(respiratoryRateSensor);
+//		
+//		Sensor o2SaturationSensor = new Sensor(id+"-o2Sensor", "O2SATURATION", userId, appId, new DeterministicDistribution(5));
+//		o2SaturationSensor.setGatewayDeviceId(parentId);
+//		o2SaturationSensor.setLatency(1.0);
+//		sensors.add(o2SaturationSensor);		
 	}
 	
 	private static FogDevice addPatientMonitor(String id, int userId, String appId, int parentId)	{
 		// Patient monitors will be raspberry Pi components at level 5
-		FogDevice patientMonitor = createFogDevice(id,2800, 1000, 10000, 10000, 5, 0, 87.53, 82.44);
-		createHeartMonitor("heartMonitor-" + id, userId, appId, patientMonitor.getId());
+		FogDevice patientMonitor = createFogDevice(id,"Pi3BPlus",5);
 		patientMonitor.setParentId(parentId);
+		addPatientMonitorSensors(id, userId, appId, patientMonitor.getId());
 		
-//		Sensor bloodPressureSensor = new Sensor(id+"-bpSensor", "BLOODPRESSURE", userId, appId, new DeterministicDistribution(5));
-//		bloodPressureSensor.setGatewayDeviceId(patientMonitor.getId());
-//		bloodPressureSensor.setLatency(1.0);
-//		sensors.add(bloodPressureSensor);
-//		Sensor o2SaturationSensor = new Sensor(id+"-o2Sensor", "O2SATURATION", userId, appId, new DeterministicDistribution(5));
-//		o2SaturationSensor.setGatewayDeviceId(patientMonitor.getId());
-//		o2SaturationSensor.setLatency(1.0);
-//		sensors.add(o2SaturationSensor);
-//		Sensor respiratoryRateSensor = new Sensor(id+"-rrSensor", "RESPIRATORYRATE", userId, appId, new DeterministicDistribution(5));
-//		respiratoryRateSensor.setGatewayDeviceId(patientMonitor.getId());
-//		respiratoryRateSensor.setLatency(1.0);
-//		sensors.add(respiratoryRateSensor);
+		// Patient monitors will have a display to output their sensor data
+		Actuator patientMonitorDisplay = new Actuator(id+"-display", userId, appId, "PATIENTMONITORDISPLAY");
+		patientMonitorDisplay.setGatewayDeviceId(patientMonitor.getId());
+		patientMonitorDisplay.setLatency(1.0); 
+		actuators.add(patientMonitorDisplay);	
 		return patientMonitor;
-
 	}
 	
 //	private static FogDevice addBin(String id, int userId, String appId, int parentId)	{
@@ -294,7 +300,7 @@ public class HospitalSimulation {
 ////		application.addAppModule("bloodPressureModule", 10);	//AppModule to monitor patient blood pressure
 ////		application.addAppModule("o2SatModule", 10);	//AppModule to monitor patient o2 saturation
 ////		application.addAppModule("respRateModule", 10);	//AppModule to monitor patient respiratory rate
-		application.addAppModule("patientVitalsModule", 10);
+		//application.addAppModule("patientVitalsModule", 10);
 //		//application.addAppModule("triggerAlert", 10);
 //		
 		//Communication between sensors and app modules
