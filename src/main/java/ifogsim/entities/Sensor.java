@@ -84,7 +84,6 @@ public class Sensor extends SimEntity{
 		}
 		long cpuLength = (long) _edge.getTupleCpuLength();
 		long nwLength = (long) _edge.getTupleNwLength();
-		
 		Tuple tuple = new Tuple(getAppId(), FogUtils.generateTupleId(), Tuple.UP, cpuLength, 1, nwLength, outputSize, 
 				new UtilizationModelFull(), new UtilizationModelFull(), new UtilizationModelFull());
 		tuple.setUserId(getUserId());
@@ -99,7 +98,7 @@ public class Sensor extends SimEntity{
 		int actualTupleId = updateTimings(getSensorName(), tuple.getDestModuleName());
 		tuple.setActualTupleId(actualTupleId);
 		
-		send(gatewayDeviceId, getLatency(), FogEvents.TUPLE_ARRIVAL,tuple);
+		send(gatewayDeviceId, getLatency(), FogEvents.TUPLE_ARRIVAL,tuple); 
 	}
 	
 	protected int updateTimings(String src, String dest){

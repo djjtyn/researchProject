@@ -45,7 +45,7 @@ public class DCNSFog {
 	static List<Sensor> sensors = new ArrayList<Sensor>();
 	static List<Actuator> actuators = new ArrayList<Actuator>();
 	static int numOfAreas = 1;
-	static int numOfCamerasPerArea = 4;
+	static int numOfCamerasPerArea = 1;
 	
 	private static boolean CLOUD = false;
 	
@@ -129,6 +129,7 @@ public class DCNSFog {
 		router.setUplinkLatency(2); // latency of connection between router and proxy server is 2 ms
 		for(int i=0;i<numOfCamerasPerArea;i++){
 			String mobileId = id+"-"+i;
+			System.out.println("MobileID: " + mobileId);
 			FogDevice camera = addCamera(mobileId, userId, appId, router.getId()); // adding a smart camera to the physical topology. Smart cameras have been modeled as fog devices as well.
 			camera.setUplinkLatency(2); // latency of connection between camera and router is 2 ms
 			fogDevices.add(camera);
@@ -140,6 +141,7 @@ public class DCNSFog {
 	private static FogDevice addCamera(String id, int userId, String appId, int parentId){
 		FogDevice camera = createFogDevice("m-"+id, 500, 1000, 10000, 10000, 3, 0, 87.53, 82.44);
 		camera.setParentId(parentId);
+		System.out.println("Camera name: " + camera.getName());
 		Sensor sensor = new Sensor("s-"+id, "CAMERA", userId, appId, new DeterministicDistribution(5)); // inter-transmission time of camera (sensor) follows a deterministic distribution
 		sensors.add(sensor);
 		Actuator ptz = new Actuator("ptz-"+id, userId, appId, "PTZ_CONTROL");

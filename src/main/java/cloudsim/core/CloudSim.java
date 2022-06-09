@@ -76,8 +76,7 @@ public class CloudSim {
 	 * @pre $none
 	 * @post $none
 	 */
-	private static void initCommonVariable(Calendar _calendar, boolean _traceFlag, int numUser)
-			throws Exception {
+	private static void initCommonVariable(Calendar _calendar, boolean _traceFlag, int numUser) throws Exception {
 		initialize();
 		// NOTE: the order for the below 3 lines are important
 		traceFlag = _traceFlag;
