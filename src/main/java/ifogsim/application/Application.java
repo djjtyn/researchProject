@@ -68,7 +68,6 @@ public class Application {
 		
 		AppModule module = new AppModule(FogUtils.generateEntityId(), moduleName, appId, userId, 
 				mips, ram, bw, size, vmm, new TupleScheduler(mips, 1), new HashMap<Pair<String, String>, SelectivityModel>());
-		
 		getModules().add(module);
 		
 	}
@@ -89,18 +88,8 @@ public class Application {
 		getModules().add(module);
 	}
 	
-	/**
-	 * Adds a non-periodic edge to the application model.
-	 * @param source
-	 * @param destination
-	 * @param tupleCpuLength
-	 * @param tupleNwLength
-	 * @param tupleType
-	 * @param direction
-	 * @param edgeType
-	 */
-	public void addAppEdge(String source, String destination, double tupleCpuLength, 
-			double tupleNwLength, String tupleType, int direction, int edgeType){
+	//Method for adding add edges for sensors, modules and actuators
+	public void addAppEdge(String source, String destination, double tupleCpuLength, double tupleNwLength, String tupleType, int direction, int edgeType){
 		AppEdge edge = new AppEdge(source, destination, tupleCpuLength, tupleNwLength, tupleType, direction, edgeType);
 		getEdges().add(edge);
 		getEdgeMap().put(edge.getTupleType(), edge);
@@ -120,6 +109,7 @@ public class Application {
 			double tupleNwLength, String tupleType, int direction, int edgeType){
 		AppEdge edge = new AppEdge(source, destination, periodicity, tupleCpuLength, tupleNwLength, tupleType, direction, edgeType);
 		getEdges().add(edge);
+		System.out.println(getEdgeMap());
 		getEdgeMap().put(edge.getTupleType(), edge);
 	}
 	

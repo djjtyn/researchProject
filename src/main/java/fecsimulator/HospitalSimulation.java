@@ -69,10 +69,10 @@ public class HospitalSimulation {
 			//Assign each application module to its fog device
 			for(FogDevice device : fogDevices){
 				if(device.getName().startsWith("PatientMonitor-")){
-					moduleMapping.addModuleToDevice("heartRateModule", device.getName());	//Attach module to read heart rate sensor data
-					
 					//Assign modules to each individual PatientMonitor device to allow each monitor to monitor sensor data
-					//moduleMapping.addModuleToDevice("patientVitalsModule", device.getName());
+					moduleMapping.addModuleToDevice("heartRateModule", device.getName());	//Attach module to read heart rate sensor data
+					moduleMapping.addModuleToDevice("bloodPressureModule", device.getName());	//Attach module to read blood pressure sensor data
+					moduleMapping.addModuleToDevice("o2SatModule", device.getName());
 					
 					
 					//moduleMapping.addModuleToDevice("monitorSinglePatientVitals", device.getName());
@@ -80,8 +80,6 @@ public class HospitalSimulation {
 //					moduleMapping.addModuleToDevice("bloodPressureModule", device.getName());
 //					moduleMapping.addModuleToDevice("o2SatModule", device.getName());
 //					moduleMapping.addModuleToDevice("respRateModule", device.getName());
-				} else if (device.getName().startsWith("heartMonitor-")) {
-					moduleMapping.addModuleToDevice("heartRateModule", device.getName());
 				}
 			}
 			if(CLOUD){
@@ -246,20 +244,22 @@ public class HospitalSimulation {
 		heartRateSensor.setLatency(1.0);
 		sensors.add(heartRateSensor);
 		
-//		Sensor bloodPressureSensor = new Sensor(id+"-bpSensor", "bloodPressure", userId, appId, new DeterministicDistribution(5));
-//		bloodPressureSensor.setGatewayDeviceId(parentId);
-//		bloodPressureSensor.setLatency(1.0);
-//		sensors.add(bloodPressureSensor);
+		Sensor bloodPressureSensor = new Sensor(id+"-bpSensor", "bloodPressure", userId, appId, new DeterministicDistribution(5));
+		bloodPressureSensor.setGatewayDeviceId(parentId);
+		bloodPressureSensor.setLatency(1.0);
+		sensors.add(bloodPressureSensor);
+		
+		Sensor o2SaturationSensor = new Sensor(id+"-o2Sensor", "o2Saturation", userId, appId, new DeterministicDistribution(5));
+		o2SaturationSensor.setGatewayDeviceId(parentId);
+		o2SaturationSensor.setLatency(1.0);
+		sensors.add(o2SaturationSensor);
 //		
 //		Sensor respiratoryRateSensor = new Sensor(id+"-rrSensor", "RESPIRATORYRATE", userId, appId, new DeterministicDistribution(5));
 //		respiratoryRateSensor.setGatewayDeviceId(parentId);
 //		respiratoryRateSensor.setLatency(1.0);
 //		sensors.add(respiratoryRateSensor);
 //		
-//		Sensor o2SaturationSensor = new Sensor(id+"-o2Sensor", "O2SATURATION", userId, appId, new DeterministicDistribution(5));
-//		o2SaturationSensor.setGatewayDeviceId(parentId);
-//		o2SaturationSensor.setLatency(1.0);
-//		sensors.add(o2SaturationSensor);		
+		
 	}
 	
 	private static FogDevice addPatientMonitor(String id, int userId, String appId, int parentId)	{
@@ -297,29 +297,36 @@ public class HospitalSimulation {
 		Application application = Application.createApplication(appId, userId);
 		
 		application.addAppModule("heartRateModule", 10);	//AppModule to monitor patient heart rate
-////		application.addAppModule("bloodPressureModule", 10);	//AppModule to monitor patient blood pressure
-////		application.addAppModule("o2SatModule", 10);	//AppModule to monitor patient o2 saturation
+		application.addAppModule("bloodPressureModule", 10);	//AppModule to monitor patient blood pressure
+		application.addAppModule("o2SatModule", 10);	//AppModule to monitor patient o2 saturation
 ////		application.addAppModule("respRateModule", 10);	//AppModule to monitor patient respiratory rate
 		//application.addAppModule("patientVitalsModule", 10);
 //		//application.addAppModule("triggerAlert", 10);
-//		
-		//Communication between sensors and app modules
+		
+		
 		application.addAppEdge("heartRate", "heartRateModule", 1000, 20000, "heartRate", Tuple.UP, AppEdge.SENSOR);	//Heart rate sensor -> heartRateModule: heartRate tuple communication
+		application.addAppEdge("heartRateModule", "PATIENTMONITORDISPLAY", 100, 28, 100, "heartRateData", Tuple.DOWN, AppEdge.ACTUATOR);
 		//application.addAppEdge("heartRateModule", "patientVitalsModule", 1000, 20000, "processedHeartRateData", Tuple.DOWN, AppEdge.MODULE);
-		application.addAppEdge("heartRateModule", "PATIENTMONITORDISPLAY", 100, 28, 100, "heartRateRawData", Tuple.DOWN, AppEdge.ACTUATOR);
-////		application.addAppEdge("BLOODPRESSURE", "bloodPressureModule", 1000, 20000, "BLOODPRESSURE", Tuple.UP, AppEdge.SENSOR);	//Blood pressure sensor -> bloodPressureModule: BLOODPRESSURE tuple communication
-////		application.addAppEdge("O2SATURATION", "o2SatModule", 1000, 20000, "O2SATURATION", Tuple.UP, AppEdge.SENSOR);	//o2 Saturation sensor -> o2SatModule: O2SATURATION tuple communication
-////		application.addAppEdge("RESPIRATORYRATE", "respRateModule", 1000, 20000, "RESPIRATORYRATE", Tuple.UP, AppEdge.SENSOR);	//Respiratory rate sensor -> respRateModule: RESPIRATORYRATE tuple communication
+
+		application.addAppEdge("bloodPressure", "bloodPressureModule", 1000, 20000, "bloodPressure", Tuple.UP, AppEdge.SENSOR);	//Blood pressure sensor -> bloodPressureModule: BLOODPRESSURE tuple communication
+    	application.addAppEdge("bloodPressureModule", "PATIENTMONITORDISPLAY", 100, 28, 100, "bloodPressureData", Tuple.DOWN, AppEdge.ACTUATOR);	
+		
+    	application.addAppEdge("o2Saturation", "o2SatModule", 1000, 20000, "o2Saturation", Tuple.UP, AppEdge.SENSOR);	//o2 Saturation sensor -> o2SatModule: O2SATURATION tuple communication
+    	application.addAppEdge("o2SatModule", "PATIENTMONITORDISPLAY", 100, 28, 100, "o2SaturationData", Tuple.DOWN, AppEdge.ACTUATOR);
+    	
+    	//application.addAppEdge("RESPIRATORYRATE", "respRateModule", 1000, 20000, "RESPIRATORYRATE", Tuple.UP, AppEdge.SENSOR);	//Respiratory rate sensor -> respRateModule: RESPIRATORYRATE tuple communication
 //		
 //		//Communication between individual patient monitors and hospital wing master monitor
 //
 //		
 		// Application module Input/Outputs
-		application.addTupleMapping("heartRateModule", "heartRate", "heartRateRawData", new FractionalSelectivity(1.0)); // heartRateModule(heartRate) returns heartRateSTREAM
-		application.addTupleMapping("heartRateModule", "heartRateRawData", "processedHeartRateData", new FractionalSelectivity(1.0)); // heartRateModule(heartRate) returns heartRateSTREAM
+		application.addTupleMapping("heartRateModule", "heartRate", "heartRateData", new FractionalSelectivity(1.0)); // heartRateModule(heartRate) returns heartRateSTREAM
+    	application.addTupleMapping("bloodPressureModule", "bloodPressure", "bloodPressureData", new FractionalSelectivity(1.0)); // bloodPressureModule(BLOODPRESSURE) returns BLOODPRESURESTREAM
+    	application.addTupleMapping("o2SatModule", "o2Saturation", "o2SaturationData", new FractionalSelectivity(1.0)); // o2SatModule(O2SATURATION) returns O2SATURATIONSTREAM
+    	//application.addTupleMapping("heartRateModule", "heartRateRawData", "processedHeartRateData", new FractionalSelectivity(1.0)); // heartRateModule(heartRate) returns heartRateSTREAM
 		//application.addTupleMapping("patientVitalsModule", "processedHeartRateData", "heartData", new FractionalSelectivity(1.0)); // heartRateModule(heartRate) returns heartRateSTREAM
-////		application.addTupleMapping("bloodPressureModule", "BLOODPRESSURE", "BLOODPRESURESTREAM", new FractionalSelectivity(1.0)); // bloodPressureModule(BLOODPRESSURE) returns BLOODPRESURESTREAM
-////		application.addTupleMapping("o2SatModule", "O2SATURATION", "O2SATURATIONSTREAM", new FractionalSelectivity(1.0)); // o2SatModule(O2SATURATION) returns O2SATURATIONSTREAM
+
+
 ////		application.addTupleMapping("respRateModule", "RESPIRATORYRATE", "RESPIRATORYRATESTREAM", new FractionalSelectivity(1.0)); // respRateModule(RESPIRATORYRATE) returns RESPIRATORYRATESTREAM
 		 
 		// Application loops
@@ -327,14 +334,29 @@ public class HospitalSimulation {
 			{
 				add("heartRate");
 				add("heartRateModule");
-				//add("patientVitalsModule");
-				//add("PATIENTMONITORDISPLAY");
+				add("PATIENTMONITORDISPLAY");
+			}
+		});
+		final AppLoop bloodPressureMonitorLoop = new AppLoop(new ArrayList<String>() {
+			{
+				add("bloodPressure");
+				add("bloodPressureModule");
+				add("PATIENTMONITORDISPLAY");
+			}
+		});
+		final AppLoop o2SatMonitorLoop = new AppLoop(new ArrayList<String>() {
+			{
+				add("o2Saturation");
+				add("o2SatModule");
+				add("PATIENTMONITORDISPLAY");
 			}
 		});
 		
 		List<AppLoop> loops = new ArrayList<AppLoop>(){
 			{
 				add(heartRateMonitorLoop);
+				add(bloodPressureMonitorLoop);
+				add(o2SatMonitorLoop);
 			}
 		};
 		

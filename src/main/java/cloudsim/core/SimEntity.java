@@ -401,8 +401,8 @@ public abstract class SimEntity implements Cloneable {
 
 	public void run() {
 		SimEvent ev = evbuf != null ? evbuf : getNextEvent();
-
 		while (ev != null) {
+			//System.out.println("ORIGIN-SimEntity Class: " + ev);
 			processEvent(ev);
 			if (state != RUNNABLE) {
 				break;

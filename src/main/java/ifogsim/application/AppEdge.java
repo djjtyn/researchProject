@@ -50,8 +50,7 @@ public class AppEdge {
 		
 	}
 	
-	public AppEdge(String source, String destination, double tupleCpuLength, 
-			double tupleNwLength, String tupleType, int direction, int edgeType){
+	public AppEdge(String source, String destination, double tupleCpuLength, double tupleNwLength, String tupleType, int direction, int edgeType){
 		setSource(source);
 		setDestination(destination);
 		setTupleCpuLength(tupleCpuLength);

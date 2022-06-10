@@ -39,17 +39,7 @@ public class AppModule extends PowerVm{
 	 */
 	private Map<String, List<Integer>> actuatorSubscriptions;
 	
-	public AppModule(
-			int id,
-			String name,
-			String appId,
-			int userId,
-			double mips,
-			int ram,
-			long bw,
-			long size,
-			String vmm,
-			CloudletScheduler cloudletScheduler,
+	public AppModule(int id,String name,String appId,int userId, double mips,int ram,long bw,long size,String vmm,CloudletScheduler cloudletScheduler,
 			Map<Pair<String, String>, SelectivityModel> selectivityMap) {
 		super(id, userId, mips, 1, ram, bw, size, 1, vmm, cloudletScheduler, 300);
 		setName(name);

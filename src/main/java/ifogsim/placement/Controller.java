@@ -61,6 +61,7 @@ public class Controller extends SimEntity{
 			FogDevice parent = getFogDeviceById(fogDevice.getParentId());
 			if(parent == null)
 				continue;
+			System.out.println(parent.getName() + " is a parent of " + fogDevice.getName());
 			double latency = fogDevice.getUplinkLatency();
 			parent.getChildToLatencyMap().put(fogDevice.getId(), latency);
 			parent.getChildrenIds().add(fogDevice.getId());
