@@ -672,19 +672,29 @@ public class FogDevice extends PowerDatacenter {
     }
 
     int numClients = 0;
-
+    int loopCount = 0;
     protected void processTupleArrival(SimEvent ev) {
         Tuple tuple = (Tuple) ev.getData();
-
+        
         if (getName().equals("cloud")) {
             updateCloudTraffic();
         }
+        
+        // Make sure the fog device is the orchestrator
+        if(this.getName().startsWith("PatientMonitorOrchestrator")) {
+        	System.out.println(this.getName());
+            System.out.println("Tuple type is " + tuple.getTupleType() +  " and its value is " + tuple.getTupleValue());
+            System.out.println("Loop count is " + ++loopCount);
+        }
+
+        
+        
 		
 		/*if(getName().equals("d-0") && tuple.getTupleType().equals("_SENSOR")){
 			System.out.println(++numClients);
 		}*/
-        Logger.debug(getName(), "Received tuple " + tuple.getCloudletId() + "with tupleType = " + tuple.getTupleType() + "\t| Source : " +
-                CloudSim.getEntityName(ev.getSource()) + "|Dest : " + CloudSim.getEntityName(ev.getDestination()));
+//        System.out.println(getName() +  " received tuple " + tuple.getCloudletId() + "with tupleType = " + tuple.getTupleType() + "\t| Source : " +
+//                CloudSim.getEntityName(ev.getSource()) + "|Dest : " + CloudSim.getEntityName(ev.getDestination()));
 		
 		/*if(CloudSim.getEntityName(ev.getSource()).equals("drone_0")||CloudSim.getEntityName(ev.getDestination()).equals("drone_0"))
 			System.out.println(CloudSim.clock()+" "+getName()+" Received tuple "+tuple.getCloudletId()+" with tupleType = "+tuple.getTupleType()+"\t| Source : "+

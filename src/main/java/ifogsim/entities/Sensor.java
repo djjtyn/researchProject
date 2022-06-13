@@ -1,6 +1,7 @@
 package ifogsim.entities;
 
 import java.util.ArrayList;
+import java.util.Random;
 
 import cloudsim.UtilizationModelFull;
 import cloudsim.core.CloudSim;
@@ -26,7 +27,12 @@ public class Sensor extends SimEntity{
 	private int controllerId;
 	private Application app;
 	private double latency;
-
+	
+	//Values set at -1 to represent that sensor values haven't been set yet
+	private int initialHeartRateSensorValue=-1;
+	
+	
+	
 	private int transmissionStartDelay = Config.TRANSMISSION_START_DELAY;
 	
 	public Sensor(String name, int userId, String appId, int gatewayDeviceId, double latency, GeoLocation geoLocation, 
@@ -77,6 +83,8 @@ public class Sensor extends SimEntity{
 	}
 	
 	public void transmit(){
+		//Check which sensor type is transmitting
+		String criticality;
 		AppEdge _edge = null;
 		for(AppEdge edge : getApp().getEdges()){
 			if(edge.getSource().equals(getTupleType()))
@@ -88,6 +96,12 @@ public class Sensor extends SimEntity{
 				new UtilizationModelFull(), new UtilizationModelFull(), new UtilizationModelFull());
 		tuple.setUserId(getUserId());
 		tuple.setTupleType(getTupleType());
+		if(sensorName.equals("heartRate")) {
+			// Generate a random number to represent heart rate detected by the sensor
+			int heartRate = generateRandomSensorData("heartRate");
+			tuple.setTupleValue(heartRate);
+			System.out.println("Sending" + heartRate);
+		}
 		
 		tuple.setDestModuleName(_edge.getDestination());
 		tuple.setSrcModuleName(getSensorName());
@@ -238,6 +252,39 @@ public class Sensor extends SimEntity{
 
 	public int getTransmissionStartDelay() {
 		return transmissionStartDelay;
+	}
+	
+	public void setInitialHeartRateSensorValue(int initialValue) {
+		this.initialHeartRateSensorValue = initialValue;
+	}
+	
+	public int getInitialHeartRateSensorValue() {
+		return this.initialHeartRateSensorValue;
+	}
+	
+	private void generateInitialSensorValue() {
+		Random random = new Random();
+		if(sensorName.equals("heartRate")) {
+
+			int randomNumber = random.nextInt(120);	
+			//this.setInitialSensorValue(randomNumber);
+		}	
+	}
+	
+	//This method will be used for generating random sensor data to be transmit 
+	private int generateRandomSensorData(String sensorType) {
+		Random random = new Random();
+		if (sensorType.equals("heartRate")) {
+			// Ensure that the sensors initial value hasn't been already set to ensure that randomly generated numbers aren't dropping or raising to extreme versatility values
+			if(this.initialHeartRateSensorValue == -1) {
+				//If the check value is -1 it signals that an initial random number hasn't been assigned to the patient so a random number will be assigned for this variable
+				this.setInitialHeartRateSensorValue(random.nextInt(120));
+			}
+			//generate a random number to represent fluctuations of a patients initial sensor data(Range of 5 above/below intitial sensor data)
+			int randomNumber = random.nextInt((this.getInitialHeartRateSensorValue() + 5) + 1 - (this.getInitialHeartRateSensorValue() - 5)) + (this.getInitialHeartRateSensorValue() - 5);
+			return randomNumber;
+		}
+		return -1;
 	}
 
 }

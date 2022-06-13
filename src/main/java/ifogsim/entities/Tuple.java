@@ -22,6 +22,8 @@ public class Tuple extends Cloudlet{
 	private int actuatorId;
 	private int sourceDeviceId;
 	private int sourceModuleId;
+	
+	private int tupleValue;	//Variable to monitor the data values passed by sensors
 	/**
 	 * Map to keep track of which module instances has a tuple traversed.
 	 * 
@@ -150,6 +152,14 @@ public class Tuple extends Cloudlet{
 		else {
 			return traversedMicroservices.get(microserviceName);
 		}
+	}
+	
+	public void setTupleValue(int val) {
+		this.tupleValue = val;
+	}
+	
+	public int getTupleValue() {
+		return this.tupleValue;
 	}
 
 	public Map<String, Integer> getTraversed() {

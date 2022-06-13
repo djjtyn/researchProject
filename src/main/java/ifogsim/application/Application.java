@@ -109,7 +109,6 @@ public class Application {
 			double tupleNwLength, String tupleType, int direction, int edgeType){
 		AppEdge edge = new AppEdge(source, destination, periodicity, tupleCpuLength, tupleNwLength, tupleType, direction, edgeType);
 		getEdges().add(edge);
-		System.out.println(getEdgeMap());
 		getEdgeMap().put(edge.getTupleType(), edge);
 	}
 	
@@ -194,7 +193,6 @@ public class Application {
 		for(AppEdge edge : getEdges()){
 			if(edge.getSource().equals(moduleName)){
 				Pair<String, String> pair = new Pair<String, String>(inputTuple.getTupleType(), edge.getTupleType());
-				
 				if(module.getSelectivityMap().get(pair)==null)
 					continue;
 				SelectivityModel selectivityModel = module.getSelectivityMap().get(pair);
@@ -243,8 +241,11 @@ public class Application {
 						tuple.setTupleType(edge.getTupleType());
 						tuple.setSourceModuleId(sourceModuleId);
 						tuple.setTraversedMicroservices(inputTuple.getTraversed());
+						//if the module processing the tuple is the heartRateModule set a tuple value for the sensed heart rate to send to the orchestrator component
+						if(moduleName.equals("heartRateModule")) {
+							tuple.setTupleValue(inputTuple.getTupleValue());
+						}
 
-						tuples.add(tuple);
 					}
 				}
 			}
