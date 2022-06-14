@@ -244,7 +244,9 @@ public class Application {
 						//if the module processing the tuple is the heartRateModule set a tuple value for the sensed heart rate to send to the orchestrator component
 						if(moduleName.equals("heartRateModule")) {
 							tuple.setTupleValue(inputTuple.getTupleValue());
+							System.out.println("Heartrate Module received  " + inputTuple.getTupleValue() + inputTuple.getTupleType() + " and is sending " + tuple.getTupleValue() + tuple.getTupleType() +" to " + tuple.getDestModuleName());
 						}
+						tuples.add(tuple);
 
 					}
 				}

@@ -83,8 +83,6 @@ public class Sensor extends SimEntity{
 	}
 	
 	public void transmit(){
-		//Check which sensor type is transmitting
-		String criticality;
 		AppEdge _edge = null;
 		for(AppEdge edge : getApp().getEdges()){
 			if(edge.getSource().equals(getTupleType()))
@@ -96,11 +94,12 @@ public class Sensor extends SimEntity{
 				new UtilizationModelFull(), new UtilizationModelFull(), new UtilizationModelFull());
 		tuple.setUserId(getUserId());
 		tuple.setTupleType(getTupleType());
+		//Check which sensor type is transmitting and ensure it is sending correct values
 		if(sensorName.equals("heartRate")) {
 			// Generate a random number to represent heart rate detected by the sensor
 			int heartRate = generateRandomSensorData("heartRate");
 			tuple.setTupleValue(heartRate);
-			System.out.println("Sending" + heartRate);
+			//System.out.println("Sending" + heartRate);
 		}
 		
 		tuple.setDestModuleName(_edge.getDestination());
@@ -282,6 +281,10 @@ public class Sensor extends SimEntity{
 			}
 			//generate a random number to represent fluctuations of a patients initial sensor data(Range of 5 above/below intitial sensor data)
 			int randomNumber = random.nextInt((this.getInitialHeartRateSensorValue() + 5) + 1 - (this.getInitialHeartRateSensorValue() - 5)) + (this.getInitialHeartRateSensorValue() - 5);
+			//Ensure that the random number is >== before transmitting it to avoid sending invalid sensor values
+			if(randomNumber < 0) {
+				randomNumber = 0;
+			}
 			return randomNumber;
 		}
 		return -1;

@@ -249,6 +249,7 @@ public class FogDevice extends PowerDatacenter {
     protected void processOtherEvent(SimEvent ev) {
         switch (ev.getTag()) {
             case FogEvents.TUPLE_ARRIVAL:
+            	System.out.println("Test:" + this.getName());
                 processTupleArrival(ev);
                 break;
             case FogEvents.LAUNCH_MODULE:
@@ -673,6 +674,7 @@ public class FogDevice extends PowerDatacenter {
 
     int numClients = 0;
     int loopCount = 0;
+    
     protected void processTupleArrival(SimEvent ev) {
         Tuple tuple = (Tuple) ev.getData();
         
@@ -680,8 +682,10 @@ public class FogDevice extends PowerDatacenter {
             updateCloudTraffic();
         }
         
+        System.out.println(tuple.getSrcModuleName() + " is processing " + tuple.getTupleType() + " with its destination going to " + tuple.getDestModuleName());
+        
         // Make sure the fog device is the orchestrator
-        if(this.getName().startsWith("PatientMonitorOrchestrator")) {
+        if(this.getName().startsWith("PatientMonitorOrch")) {
         	System.out.println(this.getName());
             System.out.println("Tuple type is " + tuple.getTupleType() +  " and its value is " + tuple.getTupleValue());
             System.out.println("Loop count is " + ++loopCount);
