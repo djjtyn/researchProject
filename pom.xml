@@ -5,6 +5,10 @@
 	<groupId>org.researchproject.fecsimulator</groupId>
 	<artifactId>fecsimulator</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
+	<properties>
+    	<maven.compiler.target>1.8</maven.compiler.target>
+    	<maven.compiler.source>1.8</maven.compiler.source>
+	</properties>
 	<dependencyManagement>
 		<dependencies>
 		    <dependency>
@@ -40,14 +44,14 @@
 	</dependencies>
 	<build>
 		<plugins>
-                  <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-install-plugin</artifactId>
-                        <version>3.0.0-M1</version>
-                        <configuration>
-                            <skip>true</skip>
-                        </configuration>
-                    </plugin>
+          <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-install-plugin</artifactId>
+                <version>3.0.0-M1</version>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-shade-plugin</artifactId>
@@ -63,7 +67,22 @@
 						</goals>
 					</execution>
 				</executions>
-			</plugin>		
+			</plugin>	
+			<plugin>
+		<!-- Build an executable JAR -->
+		<groupId>org.apache.maven.plugins</groupId>
+		<artifactId>maven-jar-plugin</artifactId>
+		<version>3.1.0</version>
+		<configuration>
+			<archive>
+				<manifest>
+					<addClasspath>true</addClasspath>
+					<!-- here we specify that we want to use the main method within the App class -->
+					<mainClass>fecsimulator.HospitalSimulation</mainClass>
+				</manifest>
+			</archive>
+		</configuration>
+	</plugin>	
 		</plugins>
 	</build>
 </project>
