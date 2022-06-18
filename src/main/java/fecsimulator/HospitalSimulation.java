@@ -72,7 +72,7 @@ public class HospitalSimulation {
 				
 				//Add the orchestratorModule module to the orchestrator components
 				if(device.getName().startsWith("PatientMonitorO")) {
-					System.out.println("Adding orchestatorModule to " + device.getName());
+					//System.out.println("Adding orchestatorModule to " + device.getName());
 					moduleMapping.addModuleToDevice("orchestratorModule", device.getName());
 				}
 				

@@ -249,7 +249,6 @@ public class FogDevice extends PowerDatacenter {
     protected void processOtherEvent(SimEvent ev) {
         switch (ev.getTag()) {
             case FogEvents.TUPLE_ARRIVAL:
-            	System.out.println("Test:" + this.getName());
                 processTupleArrival(ev);
                 break;
             case FogEvents.LAUNCH_MODULE:
@@ -673,39 +672,36 @@ public class FogDevice extends PowerDatacenter {
     }
 
     int numClients = 0;
-    int loopCount = 0;
     
     protected void processTupleArrival(SimEvent ev) {
         Tuple tuple = (Tuple) ev.getData();
+        String priorityLevel = "";
         
         if (getName().equals("cloud")) {
             updateCloudTraffic();
         }
         
-        System.out.println(tuple.getSrcModuleName() + " is processing " + tuple.getTupleType() + " with its destination going to " + tuple.getDestModuleName());
+        //System.out.println(tuple.getSrcModuleName() + " is processing " + tuple.getTupleType() + " with its destination going to " + tuple.getDestModuleName());
         
         // Make sure the fog device is the orchestrator
         if(this.getName().startsWith("PatientMonitorOrch")) {
-        	System.out.println(this.getName());
-            System.out.println("Tuple type is " + tuple.getTupleType() +  " and its value is " + tuple.getTupleValue());
-            System.out.println("Loop count is " + ++loopCount);
+        	priorityLevel = determinePriority(tuple.getTupleValue(), tuple.getTupleType());
+        	//System.out.println(tuple.getTupleValue() + " has been identified as a " + priorityLevel);
+        	
+        	// If the priority of the request is anything other than p1 use serverless functions
+        	if(isLowPriority(priorityLevel)) {
+        		//This prevents the passing of the tuple but returns null for the simulation app loop delay value
+        		System.out.println(tuple.getTupleValue() + " has been identified as low priority: " + priorityLevel);
+        		//return;
+        	} else {
+        		System.out.println(tuple.getTupleValue() + " has been identified as high priority: " + priorityLevel);
+        	}
         }
-
         
-        
-		
-		/*if(getName().equals("d-0") && tuple.getTupleType().equals("_SENSOR")){
-			System.out.println(++numClients);
-		}*/
-//        System.out.println(getName() +  " received tuple " + tuple.getCloudletId() + "with tupleType = " + tuple.getTupleType() + "\t| Source : " +
-//                CloudSim.getEntityName(ev.getSource()) + "|Dest : " + CloudSim.getEntityName(ev.getDestination()));
-		
-		/*if(CloudSim.getEntityName(ev.getSource()).equals("drone_0")||CloudSim.getEntityName(ev.getDestination()).equals("drone_0"))
-			System.out.println(CloudSim.clock()+" "+getName()+" Received tuple "+tuple.getCloudletId()+" with tupleType = "+tuple.getTupleType()+"\t| Source : "+
-		CloudSim.getEntityName(ev.getSource())+"|Dest : "+CloudSim.getEntityName(ev.getDestination()));*/
-
-        send(ev.getSource(), CloudSim.getMinTimeBetweenEvents(), FogEvents.TUPLE_ACK);
-
+        System.out.println(this.getName() + " with a priority value of " + priorityLevel);
+  
+	    send(ev.getSource(), CloudSim.getMinTimeBetweenEvents(), FogEvents.TUPLE_ACK);
+	
         if (FogUtils.appIdToGeoCoverageMap.containsKey(tuple.getAppId())) {
         }
 
@@ -728,13 +724,12 @@ public class FogDevice extends PowerDatacenter {
             }
         }
 
-
         if (getName().equals("cloud") && tuple.getDestModuleName() == null) {
             sendNow(getControllerId(), FogEvents.TUPLE_FINISHED, null);
         }
 
         if (appToModulesMap.containsKey(tuple.getAppId())) {
-            if (appToModulesMap.get(tuple.getAppId()).contains(tuple.getDestModuleName())) {
+            if ((appToModulesMap.get(tuple.getAppId()).contains(tuple.getDestModuleName()))) {
                 int vmId = -1;
                 for (Vm vm : getHost().getVmList()) {
                     if (((AppModule) vm).getName().equals(tuple.getDestModuleName()))
@@ -768,8 +763,9 @@ public class FogDevice extends PowerDatacenter {
                 for (int childId : getChildrenIds())
                     sendDown(tuple, childId);
             }
-        }
-    }
+	    }
+    } 
+        
 
     protected void updateTimingsOnReceipt(Tuple tuple) {
         Application app = getApplicationMap().get(tuple.getAppId());
@@ -1220,6 +1216,37 @@ public class FogDevice extends PowerDatacenter {
   public double getyCoordinate()
   {
   return yCoordinate;
+  }
+  
+  //This method determines what priority level to assign for sensor data. 5 levels with p1 being highest priority and p5 being least priority
+  public String determinePriority(int sensorValue, String tupleType) {
+	  // Ensure the sensor value is valid
+	  if(sensorValue < 0) {
+		  return null;
+	  }
+      // Set priority thresholds for the different types of tuple types
+      if(tupleType.equals("heartRateData")) {
+    	  if(sensorValue < 50 || sensorValue > 110) {
+    		  return "p1";
+    	  } else if(sensorValue < 55 || sensorValue > 105 ) {
+    		  return "p2";
+    	  } else if(sensorValue < 60 || sensorValue > 100 ) {
+    		  return "p3";
+    	  } else if(sensorValue < 65 || sensorValue > 95 ) {
+    		  return "p4";
+    	  } else {
+    		  return "p5";
+    	  }
+      }
+      return null;
+  }
+  
+  public boolean isLowPriority(String priorityLevel) {
+	  if (priorityLevel.equals("p1")) {
+		  return false;
+	  } else {
+		  return true;
+	  }
   }
 
 

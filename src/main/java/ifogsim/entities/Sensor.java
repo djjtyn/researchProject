@@ -82,6 +82,8 @@ public class Sensor extends SimEntity{
 		setUserId(userId);
 	}
 	
+	//int loop = 0;
+	
 	public void transmit(){
 		AppEdge _edge = null;
 		for(AppEdge edge : getApp().getEdges()){
@@ -98,8 +100,9 @@ public class Sensor extends SimEntity{
 		if(sensorName.equals("heartRate")) {
 			// Generate a random number to represent heart rate detected by the sensor
 			int heartRate = generateRandomSensorData("heartRate");
-			tuple.setTupleValue(heartRate);
-			//System.out.println("Sending" + heartRate);
+			tuple.setTupleValue(100);	//Manually set so runtime duration can be assessed on ec2 to prevent interference caused by other local running resources
+			//System.out.println("SensorLoopNumber: " + ++loop);
+			//System.out.println("Value sent from sensor:" + heartRate);
 		}
 		
 		tuple.setDestModuleName(_edge.getDestination());

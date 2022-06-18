@@ -261,7 +261,7 @@ public class DCNSFog {
 		final AppLoop loop2 = new AppLoop(new ArrayList<String>(){{add("object_tracker");add("PTZ_CONTROL");}});
 		List<AppLoop> loops = new ArrayList<AppLoop>(){{add(loop1);add(loop2);}};
 		
-		//application.setLoops(loops);
+		application.setLoops(loops);
 		return application;
 	}
 }

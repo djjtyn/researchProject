@@ -1,0 +1,15 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::Serverless-2016-10-31
+Description: x20153104RP
+
+Resources:
+
+  HelloWorldLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: HelloWorldJava
+      Runtime: java8
+      MemorySize: 512
+      Handler: book.HelloWorld::handler
+      CodeUri: target/lambda.zip
+      Role: arn:aws:iam::250738637992:role/Lambda-Execution-Role
