@@ -126,7 +126,6 @@ ifogsim\utils\distribution\Distribution.class
 cloudsim\sdn\graph\core\GraphView.class
 cloudsim\sdn\overbooking\VmSchedulerTimeSharedOverbookingEnergy.class
 ifogsim\utils\OperatorSetComparator.class
-fecsimulator\DCNSFog$3.class
 cloudsim\sdn\graph\core\VmNode.class
 cloudsim\power\models\PowerModelSpecPowerIbmX3250XeonX3470.class
 cloudsim\util\ExecutionTimeMeasurer.class
@@ -206,7 +205,6 @@ cloudsim\power\PowerVmAllocationPolicyMigrationAbstract.class
 cloudsim\sdn\example\WorkloadParser.class
 cloudsim\sdn\example\topogenerators\VirtualTopologyGeneratorVmTypes$1.class
 cloudsim\sdn\PhysicalTopology.class
-fecsimulator\DCNSFog$2.class
 cloudsim\power\PowerVmSelectionPolicyMinimumUtilization.class
 cloudsim\Log.class
 cloudsim\HostStateHistoryEntry.class
@@ -255,7 +253,6 @@ cloudsim\sdn\graph\dialog\AddVirtualNode$1.class
 ifogsim\placement\ModulePlacementMobileEdgewards$1.class
 cloudsim\provisioners\RamProvisioner.class
 cloudsim\sdn\example\topogenerators\VirtualTopologyGenerator.class
-fecsimulator\DCNSFog.class
 cloudsim\power\models\PowerModelSpecPowerIbmX3250XeonX3480.class
 cloudsim\core\predicates\PredicateNotFrom.class
 cloudsim\sdn\TimedVm.class
@@ -267,7 +264,6 @@ cloudsim\sdn\graph\example\GraphicSDN$10.class
 cloudsim\sdn\example\SDNExample.class
 ifogsim\entities\FogDevice$1.class
 cloudsim\network\datacenter\RootSwitch.class
-fecsimulator\DCNSFog$1.class
 ifogsim\application\DAG.class
 cloudsim\sdn\graph\example\GraphicSDN$16.class
 cloudsim\network\datacenter\TaskStage.class

@@ -79,6 +79,11 @@ public class Actuator extends SimEntity{
 			}
 		}
 	}
+	
+	// This method will allow the actuator to receive the tuples that are using the serverless functions
+	public int retrieveValueFromLambda() {
+		return -1;
+	}
 
 	@Override
 	public void shutdownEntity() {

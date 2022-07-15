@@ -19,6 +19,8 @@ import ifogsim.mobilitydata.Clustering;
 import ifogsim.policy.AppModuleAllocationPolicy;
 import ifogsim.scheduler.StreamOperatorScheduler;
 import ifogsim.utils.*;
+import serverlessStubs.LambdaInvoke;
+
 import org.json.simple.JSONObject;
 
 import java.util.*;
@@ -681,21 +683,21 @@ public class FogDevice extends PowerDatacenter {
             updateCloudTraffic();
         }
         
-        //System.out.println(tuple.getSrcModuleName() + " is processing " + tuple.getTupleType() + " with its destination going to " + tuple.getDestModuleName());
+       // System.out.println(tuple.getSrcModuleName() + " is processing " + tuple.getTupleType() + " with its destination going to " + tuple.getDestModuleName());
         
-        // Make sure the fog device is the orchestrator
+        // If the fog device is an orchestrator check its tuple input values
         if(this.getName().startsWith("PatientMonitorOrch")) {
         	priorityLevel = determinePriority(tuple.getTupleValue(), tuple.getTupleType());
-        	//System.out.println(tuple.getTupleValue() + " has been identified as a " + priorityLevel);
-        	
+        	System.out.println("Tuple ID- " + tuple.getActualTupleId() + " PLevel:  " + priorityLevel + "-" + tuple.getTupleValue() + " of type " + tuple.getTupleType() + " from " + tuple.getSensorSourceName());
         	// If the priority of the request is anything other than p1 use serverless functions
-        	if(isLowPriority(priorityLevel)) {
-        		//This prevents the passing of the tuple but returns null for the simulation app loop delay value
-        		System.out.println(tuple.getTupleValue() + " has been identified as low priority: " + priorityLevel);
-        		//return;
-        	} else {
-        		System.out.println(tuple.getTupleValue() + " has been identified as high priority: " + priorityLevel);
-        	}
+//        	if(isLowPriority(priorityLevel)) {
+//        		//System.out.println(tuple.getTupleValue() + " is low priority");
+//        		LambdaInvoke.transmitTupleData(tuple.getSensorSourceName(), tuple.getTupleType(), tuple.getTupleValue());
+//
+//        		//return;
+//        	} else {
+//        		//System.out.println(tuple.getTupleValue() + " has been identified as high priority: " + priorityLevel);
+//        	}
         }
         
         System.out.println(this.getName() + " with a priority value of " + priorityLevel);
@@ -1220,25 +1222,66 @@ public class FogDevice extends PowerDatacenter {
   
   //This method determines what priority level to assign for sensor data. 5 levels with p1 being highest priority and p5 being least priority
   public String determinePriority(int sensorValue, String tupleType) {
+	  System.out.println("Type: " + tupleType);
 	  // Ensure the sensor value is valid
 	  if(sensorValue < 0) {
-		  return null;
+		  return "p1";
+	  } else {
+		  String priority = null;
+		  // Determine sensor priority
+		  if(tupleType.equals("heartRateData")) {
+			  priority = determineHeartRatePriority(sensorValue);   	  
+		  } else if (tupleType.equals("bloodPressureData")) {
+			  priority = determineBloodPressurePriority(sensorValue);
+		  } else if (tupleType.equals("o2SaturationData")) {
+			  priority = determineOxygenSaturationPriority(sensorValue);
+		  } else if (tupleType.equals("respiratoryRateData")) {
+			  priority = determineRespRatePriority(sensorValue);
+		  }
+		  return priority;
 	  }
-      // Set priority thresholds for the different types of tuple types
-      if(tupleType.equals("heartRateData")) {
-    	  if(sensorValue < 50 || sensorValue > 110) {
-    		  return "p1";
-    	  } else if(sensorValue < 55 || sensorValue > 105 ) {
-    		  return "p2";
-    	  } else if(sensorValue < 60 || sensorValue > 100 ) {
-    		  return "p3";
-    	  } else if(sensorValue < 65 || sensorValue > 95 ) {
-    		  return "p4";
-    	  } else {
-    		  return "p5";
-    	  }
-      }
-      return null;
+  }
+  
+  
+  // Set priority thresholds for heart rate sensors
+  public String determineHeartRatePriority(int sensorValue) {
+	  if(sensorValue < 50 || sensorValue > 110) {
+		  return "p1";
+	  } else if(sensorValue < 55 || sensorValue > 105 ) {
+		  return "p2";
+	  } else if(sensorValue < 60 || sensorValue > 100 ) {
+		  return "p3";
+	  } else if(sensorValue < 65 || sensorValue > 95 ) {
+		  return "p4";
+	  } else {
+		  return "p5";
+	  }  
+  }
+  
+  //Set priority thresholds for blood pressure sensors
+  public String determineBloodPressurePriority(int sensorValue) {
+	  if (sensorValue >120 || sensorValue <80) {
+		  return "p1";
+	  } else {
+		  return "p5";
+	  }
+  }
+  
+  //Set priority thresholds for blood pressure sensors
+  public String determineOxygenSaturationPriority(int sensorValue) {
+	  if (sensorValue < 95) {
+		  return "p1";
+	  } else {
+		  return "p5";
+	  }
+  }
+  
+  public String determineRespRatePriority(int sensorValue) {
+	  if (sensorValue < 12 || sensorValue >16) {
+		  return "p1";
+	  } else {
+		  return "p5";
+	  }
   }
   
   public boolean isLowPriority(String priorityLevel) {

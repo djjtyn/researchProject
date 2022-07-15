@@ -23,6 +23,9 @@ public class Tuple extends Cloudlet{
 	private int sourceDeviceId;
 	private int sourceModuleId;
 	
+	//Variable to allow Lambda functions to track tuple sensor origin
+	private String sensorSourceName;
+	
 	private int tupleValue;	//Variable to monitor the data values passed by sensors
 	/**
 	 * Map to keep track of which module instances has a tuple traversed.
@@ -168,6 +171,15 @@ public class Tuple extends Cloudlet{
 
 	public void setTraversedMicroservices(Map<String, Integer> traversed) {
 		traversedMicroservices = traversed;
+	}
+	
+	
+	public void setSensorSourceName(String sensorSourceName) {
+		this.sensorSourceName = sensorSourceName;
+	}
+	
+	public String getSensorSourceName() {
+		return this.sensorSourceName;
 	}
 
 }

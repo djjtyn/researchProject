@@ -160,10 +160,10 @@ public class ClusteringController extends SimEntity {
             case FogEvents.STOP_SIMULATION:
                 CloudSim.stopSimulation();
                 printTimeDetails();
-                printPowerDetails();
-                printCostDetails();
-                printNetworkUsageDetails();
-                printMigrationDelayDetails();
+                //printPowerDetails();
+                //printCostDetails();
+                //printNetworkUsageDetails();
+                //printMigrationDelayDetails();
                 System.exit(0);
                 break;
 

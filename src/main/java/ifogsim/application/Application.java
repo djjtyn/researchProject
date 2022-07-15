@@ -218,11 +218,13 @@ public class Application {
 							tuple.setTupleType(edge.getTupleType());
 							tuple.setSourceDeviceId(sourceDeviceId);
 							tuple.setSourceModuleId(sourceModuleId);
+							tuple.setSensorSourceName(inputTuple.getSensorSourceName());
 							//tuple.setActuatorId(actuatorId);
 							
 							tuples.add(tuple);
 						//}
 					}else{
+						System.out.println(edge.getSource() + " sending to " + edge.getDestination());
 						Tuple tuple = new Tuple(appId, FogUtils.generateTupleId(), edge.getDirection(),  
 								(long) (edge.getTupleCpuLength()),
 								inputTuple.getNumberOfPes(),
@@ -241,9 +243,13 @@ public class Application {
 						tuple.setTupleType(edge.getTupleType());
 						tuple.setSourceModuleId(sourceModuleId);
 						tuple.setTraversedMicroservices(inputTuple.getTraversed());
+						tuple.setSensorSourceName(inputTuple.getSensorSourceName());
 						//if the module processing the tuple is the heartRateModule set a tuple value for the sensed heart rate to send to the orchestrator component
-						if(moduleName.equals("heartRateModule")) {
+						if(moduleName.equals("heartRateModule") || moduleName.equals("bloodPressureModule")) {
 							tuple.setTupleValue(inputTuple.getTupleValue());
+						}
+						if(moduleName.equals("orchestratorModule")) {
+							System.out.println("Testing here");
 						}
 						tuples.add(tuple);
 

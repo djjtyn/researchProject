@@ -29,7 +29,8 @@ public class Sensor extends SimEntity{
 	private double latency;
 	
 	//Values set at -1 to represent that sensor values haven't been set yet
-	private int initialHeartRateSensorValue=-1;
+	private int initialHeartRateSensorValue;
+	//boolean initialSensorValue = true;
 	
 	
 	
@@ -73,6 +74,16 @@ public class Sensor extends SimEntity{
 	 * @param appId
 	 * @param transmitDistribution
 	 */
+	public Sensor(String name, String tupleType, int userId, String appId, Distribution transmitDistribution, int initialSensorVal) {
+		super(name);
+		this.setAppId(appId);
+		this.setTransmitDistribution(transmitDistribution);
+		setTupleType(tupleType);
+		setSensorName(tupleType);
+		setUserId(userId);
+		this.setInitialHeartRateSensorValue(initialSensorVal);
+	}
+	
 	public Sensor(String name, String tupleType, int userId, String appId, Distribution transmitDistribution) {
 		super(name);
 		this.setAppId(appId);
@@ -95,15 +106,14 @@ public class Sensor extends SimEntity{
 		Tuple tuple = new Tuple(getAppId(), FogUtils.generateTupleId(), Tuple.UP, cpuLength, 1, nwLength, outputSize, 
 				new UtilizationModelFull(), new UtilizationModelFull(), new UtilizationModelFull());
 		tuple.setUserId(getUserId());
+		
+		//Allow Lambda functions to retrieve sensor identifiers 
 		tuple.setTupleType(getTupleType());
-		//Check which sensor type is transmitting and ensure it is sending correct values
-		if(sensorName.equals("heartRate")) {
-			// Generate a random number to represent heart rate detected by the sensor
-			int heartRate = generateRandomSensorData("heartRate");
-			tuple.setTupleValue(100);	//Manually set so runtime duration can be assessed on ec2 to prevent interference caused by other local running resources
-			//System.out.println("SensorLoopNumber: " + ++loop);
-			//System.out.println("Value sent from sensor:" + heartRate);
-		}
+		tuple.setSensorSourceName(this.getName());
+		
+		//Allow each sensor to transmit a value
+		int sensorValue = generateRandomSensorData();
+		tuple.setTupleValue(sensorValue);	//Manually set so runtime duration can be assessed on ec2 to prevent interference caused by other local running resources
 		
 		tuple.setDestModuleName(_edge.getDestination());
 		tuple.setSrcModuleName(getSensorName());
@@ -264,33 +274,17 @@ public class Sensor extends SimEntity{
 		return this.initialHeartRateSensorValue;
 	}
 	
-	private void generateInitialSensorValue() {
-		Random random = new Random();
-		if(sensorName.equals("heartRate")) {
 
-			int randomNumber = random.nextInt(120);	
-			//this.setInitialSensorValue(randomNumber);
-		}	
-	}
 	
 	//This method will be used for generating random sensor data to be transmit 
-	private int generateRandomSensorData(String sensorType) {
+	private int generateRandomSensorData() {
 		Random random = new Random();
-		if (sensorType.equals("heartRate")) {
-			// Ensure that the sensors initial value hasn't been already set to ensure that randomly generated numbers aren't dropping or raising to extreme versatility values
-			if(this.initialHeartRateSensorValue == -1) {
-				//If the check value is -1 it signals that an initial random number hasn't been assigned to the patient so a random number will be assigned for this variable
-				this.setInitialHeartRateSensorValue(random.nextInt(120));
-			}
-			//generate a random number to represent fluctuations of a patients initial sensor data(Range of 5 above/below intitial sensor data)
-			int randomNumber = random.nextInt((this.getInitialHeartRateSensorValue() + 5) + 1 - (this.getInitialHeartRateSensorValue() - 5)) + (this.getInitialHeartRateSensorValue() - 5);
-			//Ensure that the random number is >== before transmitting it to avoid sending invalid sensor values
-			if(randomNumber < 0) {
-				randomNumber = 0;
-			}
-			return randomNumber;
+		//generate a random number to represent fluctuations of a patients initial sensor data(Range of 5 above/below intitial sensor data)
+		int randomNumber = random.nextInt((this.getInitialHeartRateSensorValue() + 5) + 1 - (this.getInitialHeartRateSensorValue() - 5)) + (this.getInitialHeartRateSensorValue() - 5);
+		//Ensure that the random number is >== before transmitting it to avoid sending invalid sensor values
+		if(randomNumber < 0) {
+			randomNumber = 0;
 		}
-		return -1;
+		return randomNumber;
+		}
 	}
-
-}

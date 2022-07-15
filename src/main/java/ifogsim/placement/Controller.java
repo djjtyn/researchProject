@@ -100,9 +100,9 @@ public class Controller extends SimEntity{
 		case FogEvents.STOP_SIMULATION:
 			CloudSim.stopSimulation();
 			printTimeDetails();
-			printPowerDetails();
-			printCostDetails();
-			printNetworkUsageDetails();
+			//printPowerDetails();
+			//printCostDetails();
+			//printNetworkUsageDetails();
 			System.exit(0);
 			break;
 			
