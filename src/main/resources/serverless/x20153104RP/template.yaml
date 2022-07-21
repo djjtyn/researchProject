@@ -4,12 +4,40 @@ Description: x20153104RP
 
 Resources:
 
+  # Lambda Function
   TransmitTupleLambda:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: TransmitTupleData
       Runtime: java8
+      AutoPublishAlias: live
       MemorySize: 512
       Handler: transmission.TransmitTuple::transmitTupleData
       CodeUri: target/lambda.zip
       Role: arn:aws:iam::250738637992:role/Lambda-Execution-Role
+      ProvisionedConcurrencyConfig:
+        ProvisionedConcurrentExecutions: 1 
+ 
+  # Autoscaler for Lambda function       
+  LambdaScalableTarget:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Properties:
+      MinCapacity: 1
+      MaxCapacity: 100
+      ResourceId: !Sub function:${TransmitTupleLambda}:live
+      RoleARN: arn:aws:iam::250738637992:role/aws-service-role/autoscaling.amazonaws.com/AWSServiceRoleForAutoScaling
+      ScalableDimension: lambda:function:ProvisionedConcurrency
+      ServiceNamespace: lambda
+    DependsOn: TransmitTupleLambdaAliaslive 
+    
+  # Lambda Autoscaler Configuration
+  MyTargetTrackingScalingPolicy:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName: utilization
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId: !Ref LambdaScalableTarget
+      TargetTrackingScalingPolicyConfiguration:
+        TargetValue: 0.70 
+        PredefinedMetricSpecification:
+          PredefinedMetricType: LambdaProvisionedConcurrencyUtilization       
