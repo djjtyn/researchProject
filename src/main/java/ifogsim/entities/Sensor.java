@@ -120,7 +120,7 @@ public class Sensor extends SimEntity{
 		Logger.debug(getName(), "Sending tuple with tupleId = "+tuple.getCloudletId());
 
 		tuple.setDestinationDeviceId(getGatewayDeviceId());
-
+		//System.out.println(tuple.getSrcModuleName() + " sending " + getTupleType() + " to " + tuple.getDestModuleName());
 		int actualTupleId = updateTimings(getSensorName(), tuple.getDestModuleName());
 		tuple.setActualTupleId(actualTupleId);
 		

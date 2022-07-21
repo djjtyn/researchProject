@@ -8,6 +8,7 @@ import java.util.Map;
 import org.apache.commons.math3.util.Pair;
 import cloudsim.UtilizationModelFull;
 import ifogsim.application.selectivity.SelectivityModel;
+import ifogsim.entities.FogDevice;
 import ifogsim.entities.Tuple;
 import ifogsim.scheduler.TupleScheduler;
 import ifogsim.utils.FogUtils;
@@ -68,8 +69,22 @@ public class Application {
 		
 		AppModule module = new AppModule(FogUtils.generateEntityId(), moduleName, appId, userId, 
 				mips, ram, bw, size, vmm, new TupleScheduler(mips, 1), new HashMap<Pair<String, String>, SelectivityModel>());
-		getModules().add(module);
+		if(moduleName.equals("orchestratorModule")) {
+			
+		}
+		getModules().add(module);	
+	}
+	
+	//This constructor allows a snsTopicName to be passed to allow orchestrator module to publish to the topic
+	public void addOrchestratorAppModule(String moduleName, int ram, String snsTopicName) {
+		int mips = 1000;
+		long size = 10000;
+		long bw = 1000;
+		String vmm = "Xen";
 		
+		AppModule module = new AppModule(FogUtils.generateEntityId(), moduleName, appId, userId, 
+				mips, ram, bw, size, vmm, new TupleScheduler(mips, 1), new HashMap<Pair<String, String>, SelectivityModel>(), snsTopicName);
+		getModules().add(module);	
 	}
 
 	/**
@@ -172,7 +187,6 @@ public class Application {
 				try {
 					return module;
 				} catch(Exception e) {
-					System.out.println("Exception at GetModuleByName");
 					e.printStackTrace();
 				}
 			}
@@ -224,7 +238,6 @@ public class Application {
 							tuples.add(tuple);
 						//}
 					}else{
-						System.out.println(edge.getSource() + " sending to " + edge.getDestination());
 						Tuple tuple = new Tuple(appId, FogUtils.generateTupleId(), edge.getDirection(),  
 								(long) (edge.getTupleCpuLength()),
 								inputTuple.getNumberOfPes(),
@@ -244,13 +257,14 @@ public class Application {
 						tuple.setSourceModuleId(sourceModuleId);
 						tuple.setTraversedMicroservices(inputTuple.getTraversed());
 						tuple.setSensorSourceName(inputTuple.getSensorSourceName());
-						//if the module processing the tuple is the heartRateModule set a tuple value for the sensed heart rate to send to the orchestrator component
-						if(moduleName.equals("heartRateModule") || moduleName.equals("bloodPressureModule")) {
-							tuple.setTupleValue(inputTuple.getTupleValue());
+						//if the module processing the tuple is either heart rate, blood pressure, respiratory rate or 
+						if(moduleName.equals("heartRateModule") || moduleName.equals("bloodPressureModule") || moduleName.equals("o2SatModule")) {
+							tuple.setTupleValue(inputTuple.getTupleValue());									
+							//System.out.println(moduleName + ": " + tuple.getTupleType() + " sending to ID" + tuple.getDestinationDeviceId());
 						}
-						if(moduleName.equals("orchestratorModule")) {
-							System.out.println("Testing here");
-						}
+//						if(moduleName.equals("orchestratorModule")) {
+//							System.out.println("Testing here");
+//						}
 						tuples.add(tuple);
 
 					}

@@ -3,35 +3,31 @@ package serverlessStubs;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicSessionCredentials;
+import com.amazonaws.regions.Regions;
+import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.AmazonSNSClient;
-import com.amazonaws.services.sns.AmazonSNSClientBuilder;
 import com.amazonaws.services.sns.model.CreateTopicRequest;
 
 
 public class SNSTopic {
 	
-	static boolean clientSet = false;
-	static AmazonSNSClient snsClient;
-	
-	//Method to instantiate a client for communicating with AWS Lambda
-	public static void createSNSClient() {
-		System.out.println("Creating client...");
-		// Credentials required to connect to AWS account
+	//Method to instantiate and return client for communicating with AWS SNS
+	public static AmazonSNS createSNSClient() {
 	    AWSCredentials credentials = new BasicSessionCredentials(System.getenv("AWS_ACCESS_KEY_ID"), System.getenv("AWS_SECRET_ACCESS_KEY"), System.getenv("SESSION_TOKEN"));
-	    snsClient = (AmazonSNSClient) AmazonSNSClientBuilder.standard().withCredentials(new AWSStaticCredentialsProvider(credentials)).build();
-	    clientSet = true;
+		AmazonSNS client = AmazonSNSClient.builder().withRegion(Regions.EU_WEST_1).withCredentials(new AWSStaticCredentialsProvider(credentials)).build();
+		return client;
 	}
 	
-	public static void createTopic(String topicName) {
-		//Check if this class already has a sns client
-		if(!clientSet) {
-			createSNSClient();
-		} 
+	public static void createSNSTopic(String topicName) {
 		try {
-			snsClient.createTopic(new CreateTopicRequest(topicName));
+			System.out.println("Attempting to create SNS topic with name: " + topicName + "...");
+			//Get the SNS client and create a topic named as method argument
+			AmazonSNS client = createSNSClient();
+			client.createTopic(new CreateTopicRequest(topicName));
+			System.out.println("SNS topic created");
 		} catch(Exception e) {
 			e.printStackTrace();
-			System.out.println("issue creating SNS Topic");
+			System.out.println("Issue creating SNS Topic");
 		}	
 	}
 }

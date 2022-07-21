@@ -4,9 +4,3 @@ COPY src /tmp/src
 WORKDIR /tmp/
 RUN mvn package
 CMD ["java", "-cp", "target/fecsimulator-0.0.1-SNAPSHOT.jar", "fecsimulator.HospitalSimulation"]
-
-
-
-
-
-

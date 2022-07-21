@@ -20,6 +20,7 @@ import ifogsim.policy.AppModuleAllocationPolicy;
 import ifogsim.scheduler.StreamOperatorScheduler;
 import ifogsim.utils.*;
 import serverlessStubs.LambdaInvoke;
+import serverlessStubs.SNSTopic;
 
 import org.json.simple.JSONObject;
 
@@ -92,13 +93,8 @@ public class FogDevice extends PowerDatacenter {
     protected double clusterLinkBandwidth;
 
 
-    public FogDevice(
-            String name,
-            FogDeviceCharacteristics characteristics,
-            VmAllocationPolicy vmAllocationPolicy,
-            List<Storage> storageList,
-            double schedulingInterval,
-            double uplinkBandwidth, double downlinkBandwidth, double uplinkLatency, double ratePerMips) throws Exception {
+    public FogDevice(String name,FogDeviceCharacteristics characteristics,VmAllocationPolicy vmAllocationPolicy,List<Storage> storageList,
+            double schedulingInterval,double uplinkBandwidth, double downlinkBandwidth, double uplinkLatency, double ratePerMips) throws Exception {
         super(name, characteristics, vmAllocationPolicy, storageList, schedulingInterval);
         setCharacteristics(characteristics);
         setVmAllocationPolicy(vmAllocationPolicy);
@@ -148,94 +144,6 @@ public class FogDevice extends PowerDatacenter {
         setClusterLinkBusy(false);
 
     }
-
-    public FogDevice(
-            String name, long mips, int ram,
-            double uplinkBandwidth, double downlinkBandwidth, double ratePerMips, PowerModel powerModel) throws Exception {
-        super(name, null, null, new LinkedList<Storage>(), 0);
-
-        List<Pe> peList = new ArrayList<Pe>();
-
-        // 3. Create PEs and add these into a list.
-        peList.add(new Pe(0, new PeProvisionerOverbooking(mips))); // need to store Pe id and MIPS Rating
-
-        int hostId = FogUtils.generateEntityId();
-        long storage = 1000000; // host storage
-        int bw = 10000;
-
-        PowerHost host = new PowerHost(
-                hostId,
-                new RamProvisionerSimple(ram),
-                new BwProvisionerOverbooking(bw),
-                storage,
-                peList,
-                new StreamOperatorScheduler(peList),
-                powerModel
-        );
-
-        List<Host> hostList = new ArrayList<Host>();
-        hostList.add(host);
-
-        setVmAllocationPolicy(new AppModuleAllocationPolicy(hostList));
-
-        String arch = Config.FOG_DEVICE_ARCH;
-        String os = Config.FOG_DEVICE_OS;
-        String vmm = Config.FOG_DEVICE_VMM;
-        double time_zone = Config.FOG_DEVICE_TIMEZONE;
-        double cost = Config.FOG_DEVICE_COST;
-        double costPerMem = Config.FOG_DEVICE_COST_PER_MEMORY;
-        double costPerStorage = Config.FOG_DEVICE_COST_PER_STORAGE;
-        double costPerBw = Config.FOG_DEVICE_COST_PER_BW;
-
-        FogDeviceCharacteristics characteristics = new FogDeviceCharacteristics(
-                arch, os, vmm, host, time_zone, cost, costPerMem,
-                costPerStorage, costPerBw);
-
-        setCharacteristics(characteristics);
-
-        setLastProcessTime(0.0);
-        setVmList(new ArrayList<Vm>());
-        setUplinkBandwidth(uplinkBandwidth);
-        setDownlinkBandwidth(downlinkBandwidth);
-        setUplinkLatency(uplinkLatency);
-        setAssociatedActuatorIds(new ArrayList<Pair<Integer, Double>>());
-        for (Host host1 : getCharacteristics().getHostList()) {
-            host1.setDatacenter(this);
-        }
-        setActiveApplications(new ArrayList<String>());
-        if (getCharacteristics().getNumberOfPes() == 0) {
-            throw new Exception(super.getName()
-                    + " : Error - this entity has no PEs. Therefore, can't process any Cloudlets.");
-        }
-
-
-        getCharacteristics().setId(super.getId());
-
-        applicationMap = new HashMap<String, Application>();
-        appToModulesMap = new HashMap<String, List<String>>();
-        northTupleQueue = new LinkedList<Tuple>();
-        southTupleQueue = new LinkedList<Pair<Tuple, Integer>>();
-        setNorthLinkBusy(false);
-        setSouthLinkBusy(false);
-
-
-        setChildrenIds(new ArrayList<Integer>());
-        setChildToOperatorsMap(new HashMap<Integer, List<String>>());
-
-        this.cloudTrafficMap = new HashMap<Integer, Integer>();
-
-        this.lockTime = 0;
-
-        this.energyConsumption = 0;
-        this.lastUtilization = 0;
-        setTotalCost(0);
-        setChildToLatencyMap(new HashMap<Integer, Double>());
-        setModuleInstanceCount(new HashMap<String, Map<String, Integer>>());
-
-        clusterTupleQueue = new LinkedList<>();
-        setClusterLinkBusy(false);
-    }
-
     /**
      * Overrides this method when making a new and different type of resource. <br>
      * <b>NOTE:</b> You do not need to override {@link #body()} method, if you use this method.
@@ -243,9 +151,6 @@ public class FogDevice extends PowerDatacenter {
      * @pre $none
      * @post $none
      */
-    protected void registerOtherEntity() {
-
-    }
 
     @Override
     protected void processOtherEvent(SimEvent ev) {
@@ -311,7 +216,6 @@ public class FogDevice extends PowerDatacenter {
         // TODO Auto-generated method stub
         JSONObject object = (JSONObject) ev.getData();
         AppModule appModule = (AppModule) object.get("module");
-        System.out.println(getName() + " is sending " + appModule.getName());
         NetworkUsageMonitor.sendingModule((double) object.get("delay"), appModule.getSize());
         MigrationDelayMonitor.setMigrationDelay((double) object.get("delay"));
 
@@ -326,7 +230,6 @@ public class FogDevice extends PowerDatacenter {
         JSONObject object = (JSONObject) ev.getData();
         AppModule appModule = (AppModule) object.get("module");
         Application app = (Application) object.get("application");
-        System.out.println(getName() + " is receiving " + appModule.getName());
         NetworkUsageMonitor.sendingModule((double) object.get("delay"), appModule.getSize());
         MigrationDelayMonitor.setMigrationDelay((double) object.get("delay"));
 
@@ -355,7 +258,6 @@ public class FogDevice extends PowerDatacenter {
         if (!moduleInstanceCount.containsKey(appId))
             moduleInstanceCount.put(appId, new HashMap<String, Integer>());
         moduleInstanceCount.get(appId).put(config.getModule().getName(), config.getInstanceCount());
-        System.out.println(getName() + " Creating " + config.getInstanceCount() + " instances of module " + config.getModule().getName());
     }
 
     private AppModule getModuleByName(String moduleName) {
@@ -387,7 +289,6 @@ public class FogDevice extends PowerDatacenter {
          * Since tuples sent through a DOWN application edge are anyways broadcasted, only UP tuples are replicated
          */
         for (int i = 0; i < ((edge.getDirection() == Tuple.UP) ? instanceCount : 1); i++) {
-            //System.out.println(CloudSim.clock()+" : Sending periodic tuple "+edge.getTupleType());
             Tuple tuple = applicationMap.get(module.getAppId()).createTuple(edge, getId(), module.getId());
             updateTimingsOnSending(tuple);
             sendToSelf(tuple);
@@ -515,7 +416,6 @@ public class FogDevice extends PowerDatacenter {
                         Tuple tuple = (Tuple) cl;
                         TimeKeeper.getInstance().tupleEndedExecution(tuple);
                         Application application = getApplicationMap().get(tuple.getAppId());
-                        Logger.debug(getName(), "Completed execution of tuple " + tuple.getCloudletId() + "on " + tuple.getDestModuleName());
                         List<Tuple> resultantTuples = application.getResultantTuples(tuple.getDestModuleName(), tuple, getId(), vm.getId());
                         for (Tuple resTuple : resultantTuples) {
                             resTuple.setModuleCopyMap(new HashMap<String, Integer>(tuple.getModuleCopyMap()));
@@ -609,14 +509,6 @@ public class FogDevice extends PowerDatacenter {
         double currentEnergyConsumption = getEnergyConsumption();
         double newEnergyConsumption = currentEnergyConsumption + (timeNow - lastUtilizationUpdateTime) * getHost().getPowerModel().getPower(lastUtilization);
         setEnergyConsumption(newEnergyConsumption);
-	
-		/*if(getName().equals("d-0")){
-			System.out.println("------------------------");
-			System.out.println("Utilization = "+lastUtilization);
-			System.out.println("Power = "+getHost().getPowerModel().getPower(lastUtilization));
-			System.out.println(timeNow-lastUtilizationUpdateTime);
-		}*/
-
         double currentCost = getTotalCost();
         double newcost = currentCost + (timeNow - lastUtilizationUpdateTime) * getRatePerMips() * lastUtilization * getHost().getTotalMips();
         setTotalCost(newcost);
@@ -677,31 +569,11 @@ public class FogDevice extends PowerDatacenter {
     
     protected void processTupleArrival(SimEvent ev) {
         Tuple tuple = (Tuple) ev.getData();
-        String priorityLevel = "";
         
         if (getName().equals("cloud")) {
             updateCloudTraffic();
         }
         
-       // System.out.println(tuple.getSrcModuleName() + " is processing " + tuple.getTupleType() + " with its destination going to " + tuple.getDestModuleName());
-        
-        // If the fog device is an orchestrator check its tuple input values
-        if(this.getName().startsWith("PatientMonitorOrch")) {
-        	priorityLevel = determinePriority(tuple.getTupleValue(), tuple.getTupleType());
-        	System.out.println("Tuple ID- " + tuple.getActualTupleId() + " PLevel:  " + priorityLevel + "-" + tuple.getTupleValue() + " of type " + tuple.getTupleType() + " from " + tuple.getSensorSourceName());
-        	// If the priority of the request is anything other than p1 use serverless functions
-//        	if(isLowPriority(priorityLevel)) {
-//        		//System.out.println(tuple.getTupleValue() + " is low priority");
-//        		LambdaInvoke.transmitTupleData(tuple.getSensorSourceName(), tuple.getTupleType(), tuple.getTupleValue());
-//
-//        		//return;
-//        	} else {
-//        		//System.out.println(tuple.getTupleValue() + " has been identified as high priority: " + priorityLevel);
-//        	}
-        }
-        
-        System.out.println(this.getName() + " with a priority value of " + priorityLevel);
-  
 	    send(ev.getSource(), CloudSim.getMinTimeBetweenEvents(), FogEvents.TUPLE_ACK);
 	
         if (FogUtils.appIdToGeoCoverageMap.containsKey(tuple.getAppId())) {
@@ -799,12 +671,23 @@ public class FogDevice extends PowerDatacenter {
         send(ev.getSource(), CloudSim.getMinTimeBetweenEvents(), FogEvents.TUPLE_ACK);
     }
 
+    //This method will determine if serverless functions are to be used if the orchestratorModule located on PatientMonitorOrchestrator device is used
     protected void executeTuple(SimEvent ev, String moduleName) {
-        Logger.debug(getName(), "Executing tuple on module " + moduleName);
         Tuple tuple = (Tuple) ev.getData();
-
         AppModule module = getModuleByName(moduleName);
-
+        
+        //Check if the execution is being done using the orchestratorModule of the PatientMonitorOrchestrator device 
+        if(moduleName.equals("orchestratorModule") && this.getName().startsWith("PatientMonitorO")) {
+        	//Determine the priority level of the request
+        	String priorityLevel = determinePriority(tuple.getTupleValue(), tuple.getTupleType());
+        	//If the priority of the request is anything other than p1 use serverless functions
+        	if(!priorityLevel.equals("p1")) {
+        		//Invoke a Lambda function passing in the sensors and SNS topic information 
+        		LambdaInvoke.transmitTupleData(tuple.getSensorSourceName(), tuple.getTupleType(), tuple.getTupleValue(), module.getSNSTopicName());
+        		System.out.println("Invoked Lambda function");
+        		return;
+        	}
+        }
         if (tuple.getDirection() == Tuple.UP) {
             String srcModule = tuple.getSrcModuleName();
             if (!module.getDownInstanceIdsMaps().containsKey(srcModule))
@@ -906,7 +789,6 @@ public class FogDevice extends PowerDatacenter {
         double networkDelay = tuple.getCloudletFileSize() / getDownlinkBandwidth();
         //Logger.debug(getName(), "Sending tuple with tupleType = "+tuple.getTupleType()+" DOWN");
         setSouthLinkBusy(true);
-        //System.out.println(getName()+" Sending tuple with tupleType = "+tuple.getTupleType()+" to "+childId);
         double latency = getChildToLatencyMap().get(childId);
         send(getId(), networkDelay, FogEvents.UPDATE_SOUTH_TUPLE_QUEUE);
         send(childId, networkDelay + latency, FogEvents.TUPLE_ARRIVAL, tuple);
@@ -1116,11 +998,12 @@ public class FogDevice extends PowerDatacenter {
     public void addClusterMember(int clusterMemberId) {
         this.clusterMembers.add(clusterMemberId);
     }
+    
 
     public List<Integer> getClusterMembers() {
         return this.clusterMembers;
     }
-
+    
     public void setIsInCluster(Boolean bool) {
         this.isInCluster = bool;
     }
@@ -1222,7 +1105,7 @@ public class FogDevice extends PowerDatacenter {
   
   //This method determines what priority level to assign for sensor data. 5 levels with p1 being highest priority and p5 being least priority
   public String determinePriority(int sensorValue, String tupleType) {
-	  System.out.println("Type: " + tupleType);
+//	  System.out.println("Type: " + tupleType + " has value of " + sensorValue);
 	  // Ensure the sensor value is valid
 	  if(sensorValue < 0) {
 		  return "p1";
@@ -1269,6 +1152,7 @@ public class FogDevice extends PowerDatacenter {
   
   //Set priority thresholds for blood pressure sensors
   public String determineOxygenSaturationPriority(int sensorValue) {
+//	  System.out.println("Oxygen Sat level is " + sensorValue);
 	  if (sensorValue < 95) {
 		  return "p1";
 	  } else {
@@ -1283,15 +1167,4 @@ public class FogDevice extends PowerDatacenter {
 		  return "p5";
 	  }
   }
-  
-  public boolean isLowPriority(String priorityLevel) {
-	  if (priorityLevel.equals("p1")) {
-		  return false;
-	  } else {
-		  return true;
-	  }
-  }
-
-
-
 }
