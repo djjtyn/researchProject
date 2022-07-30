@@ -39,16 +39,6 @@ public class TransmitTuple {
 		return client;
 	}
 
-	public String createSNSTopic(AmazonSNS client, String topicName) {
-		try {
-			CreateTopicRequest request = new CreateTopicRequest(topicName);
-			CreateTopicResult response = client.createTopic(request);
-			return response.getTopicArn();
-		} catch(Exception e) {
-			e.printStackTrace();
-			return "Issue creating topic";
-		}
-	}
 
 	public void publishToSNSTopic(HashMap<String, Object> map) {
 		//Get a SNS client

@@ -18,7 +18,6 @@ import ifogsim.entities.Sensor;
 import ifogsim.utils.Config;
 import ifogsim.utils.FogEvents;
 import ifogsim.utils.FogUtils;
-import ifogsim.utils.NetworkUsageMonitor;
 import ifogsim.utils.TimeKeeper;
 
 public class Controller extends SimEntity{
@@ -109,9 +108,6 @@ public class Controller extends SimEntity{
 		}
 	}
 	
-	private void printNetworkUsageDetails() {
-		System.out.println("Total network usage = "+NetworkUsageMonitor.getNetworkUsage()/Config.MAX_SIMULATION_TIME);		
-	}
 
 	private FogDevice getCloud(){
 		for(FogDevice dev : getFogDevices())

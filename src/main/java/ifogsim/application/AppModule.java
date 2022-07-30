@@ -47,7 +47,6 @@ public class AppModule extends PowerVm{
 			Map<Pair<String, String>, SelectivityModel> selectivityMap) {
 		super(id, userId, mips, 1, ram, bw, size, 1, vmm, cloudletScheduler, 300);
 		setName(name);
-		System.out.println("Setting: " + name);
 		setId(id);
 		setAppId(appId);
 		setUserId(userId);

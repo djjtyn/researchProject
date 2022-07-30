@@ -1,7 +1,6 @@
 package ifogsim.utils;
 
 public class Config {
-
 	public static final double RESOURCE_MGMT_INTERVAL = 100;
 	public static int MAX_SIMULATION_TIME = 2000;
 	public static int RESOURCE_MANAGE_INTERVAL = 100;
@@ -23,4 +22,5 @@ public class Config {
 	public static double clusteringLatency = 2.0; //milisecond
 
 	public static final int TRANSMISSION_START_DELAY = 50;
+
 }

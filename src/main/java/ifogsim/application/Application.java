@@ -69,9 +69,6 @@ public class Application {
 		
 		AppModule module = new AppModule(FogUtils.generateEntityId(), moduleName, appId, userId, 
 				mips, ram, bw, size, vmm, new TupleScheduler(mips, 1), new HashMap<Pair<String, String>, SelectivityModel>());
-		if(moduleName.equals("orchestratorModule")) {
-			
-		}
 		getModules().add(module);	
 	}
 	
@@ -258,9 +255,10 @@ public class Application {
 						tuple.setTraversedMicroservices(inputTuple.getTraversed());
 						tuple.setSensorSourceName(inputTuple.getSensorSourceName());
 						//if the module processing the tuple is either heart rate, blood pressure, respiratory rate or 
-						if(moduleName.equals("heartRateModule") || moduleName.equals("bloodPressureModule") || moduleName.equals("o2SatModule")) {
+						if(moduleName.equals("heartRateModule") || moduleName.equals("bloodPressureModule") || moduleName.equals("o2SaturationModule") || moduleName.equals("orchestratorModule")
+								|| moduleName.equals("patientMonitorMasterModule")) {
+							System.out.println("Module Name: " + moduleName);
 							tuple.setTupleValue(inputTuple.getTupleValue());									
-							//System.out.println(moduleName + ": " + tuple.getTupleType() + " sending to ID" + tuple.getDestinationDeviceId());
 						}
 //						if(moduleName.equals("orchestratorModule")) {
 //							System.out.println("Testing here");

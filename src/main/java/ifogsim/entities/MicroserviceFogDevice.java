@@ -1,6 +1,14 @@
 package ifogsim.entities;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.commons.math3.util.Pair;
+import org.json.simple.JSONObject;
+
 import cloudsim.Storage;
 import cloudsim.Vm;
 import cloudsim.VmAllocationPolicy;
@@ -11,10 +19,13 @@ import ifogsim.application.AppModule;
 import ifogsim.application.Application;
 import ifogsim.placement.MicroservicePlacementLogic;
 import ifogsim.placement.PlacementLogicOutput;
-import ifogsim.utils.*;
-import org.json.simple.JSONObject;
-
-import java.util.*;
+import ifogsim.utils.FogEvents;
+import ifogsim.utils.FogUtils;
+import ifogsim.utils.Logger;
+import ifogsim.utils.MicroservicePlacementConfig;
+import ifogsim.utils.MigrationDelayMonitor;
+import ifogsim.utils.ModuleLaunchConfig;
+import ifogsim.utils.NetworkUsageMonitor;
 
 /**
  * Created by Samodha Pallewatta
@@ -484,7 +495,6 @@ public class MicroserviceFogDevice extends FogDevice {
     protected void moduleSend(SimEvent ev) {
         JSONObject object = (JSONObject) ev.getData();
         AppModule appModule = (AppModule) object.get("module");
-        System.out.println(getName() + " is sending " + appModule.getName());
         NetworkUsageMonitor.sendingModule((double) object.get("delay"), appModule.getSize());
         MigrationDelayMonitor.setMigrationDelay((double) object.get("delay"));
 

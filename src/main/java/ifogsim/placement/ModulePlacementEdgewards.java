@@ -33,26 +33,30 @@ public class ModulePlacementEdgewards extends ModulePlacement{
 	
 	public ModulePlacementEdgewards(List<FogDevice> fogDevices, List<Sensor> sensors, List<Actuator> actuators, 
 			Application application, ModuleMapping moduleMapping){
-		this.setFogDevices(fogDevices);
-		this.setApplication(application);
-		this.setModuleMapping(moduleMapping);
-		this.setModuleToDeviceMap(new HashMap<String, List<Integer>>());
-		this.setDeviceToModuleMap(new HashMap<Integer, List<AppModule>>());
-		setSensors(sensors);
-		setActuators(actuators);
-		setCurrentCpuLoad(new HashMap<Integer, Double>());
-		setCurrentModuleMap(new HashMap<Integer, List<String>>());
-		setCurrentModuleLoadMap(new HashMap<Integer, Map<String, Double>>());
-		setCurrentModuleInstanceNum(new HashMap<Integer, Map<String, Integer>>());
-		for(FogDevice dev : getFogDevices()){
-			getCurrentCpuLoad().put(dev.getId(), 0.0);
-			getCurrentModuleLoadMap().put(dev.getId(), new HashMap<String, Double>());
-			getCurrentModuleMap().put(dev.getId(), new ArrayList<String>());
-			getCurrentModuleInstanceNum().put(dev.getId(), new HashMap<String, Integer>());
+		try {
+			this.setFogDevices(fogDevices);
+			this.setApplication(application);
+			this.setModuleMapping(moduleMapping);
+			this.setModuleToDeviceMap(new HashMap<String, List<Integer>>());
+			this.setDeviceToModuleMap(new HashMap<Integer, List<AppModule>>());
+			setSensors(sensors);
+			setActuators(actuators);
+			setCurrentCpuLoad(new HashMap<Integer, Double>());
+			setCurrentModuleMap(new HashMap<Integer, List<String>>());
+			setCurrentModuleLoadMap(new HashMap<Integer, Map<String, Double>>());
+			setCurrentModuleInstanceNum(new HashMap<Integer, Map<String, Integer>>());
+			for(FogDevice dev : getFogDevices()){
+				getCurrentCpuLoad().put(dev.getId(), 0.0);
+				getCurrentModuleLoadMap().put(dev.getId(), new HashMap<String, Double>());
+				getCurrentModuleMap().put(dev.getId(), new ArrayList<String>());
+				getCurrentModuleInstanceNum().put(dev.getId(), new HashMap<String, Integer>());
+			}
+			mapModules();
+			setModuleInstanceCountMap(getCurrentModuleInstanceNum());
+		} catch (Exception e) {
+			System.out.println("Error Instantiaing ModulePlacementEdgewards Object");
+			e.printStackTrace();
 		}
-		
-		mapModules();
-		setModuleInstanceCountMap(getCurrentModuleInstanceNum());
 	}
 	
 	@Override
@@ -72,11 +76,12 @@ public class ModulePlacementEdgewards extends ModulePlacement{
 		}
 		
 		List<List<Integer>> leafToRootPaths = getLeafToRootPaths();
-		
 		for(List<Integer> path : leafToRootPaths){
+			//System.out.println("Path: " + path); 
 			placeModulesInPath(path);
+
+			
 		}
-		
 		try {
 			for(int deviceId : getCurrentModuleMap().keySet()){
 				for(String module : getCurrentModuleMap().get(deviceId)){
@@ -148,7 +153,6 @@ public class ModulePlacementEdgewards extends ModulePlacement{
 				appEdgeToRate.put(edge, 1/edge.getPeriodicity());
 			}
 		}
-		
 		for(Integer deviceId : path){
 			FogDevice device = getFogDeviceById(deviceId);
 			Map<String, Integer> sensorsAssociated = getAssociatedSensors(device);
@@ -196,7 +200,8 @@ public class ModulePlacementEdgewards extends ModulePlacement{
 			 * Getting the list of modules ready to be placed on current device on path
 			 */
 			List<String> modulesToPlace = getModulesToPlace(placedModules);
-			
+			for(String name: modulesToPlace) {
+			}
 			while(modulesToPlace.size() > 0){ // Loop runs until all modules in modulesToPlace are deployed in the path
 				String moduleName = modulesToPlace.get(0);
 				double totalCpuLoad = 0;
@@ -244,7 +249,6 @@ public class ModulePlacementEdgewards extends ModulePlacement{
 					else{
 						Logger.debug("ModulePlacementEdgeward", "Placement of operator "+moduleName+ " on device "+device.getName() + " successful.");
 						getCurrentCpuLoad().put(deviceId, totalCpuLoad + getCurrentCpuLoad().get(deviceId));
-						System.out.println("Placement of operator "+moduleName+ " on device "+device.getName() + " successful.");
 
 						if(!currentModuleMap.containsKey(deviceId))
 							currentModuleMap.put(deviceId, new ArrayList<String>());
@@ -263,8 +267,6 @@ public class ModulePlacementEdgewards extends ModulePlacement{
 						getCurrentModuleInstanceNum().get(deviceId).put(moduleName, max);
 					}
 				}
-			
-			
 				modulesToPlace.remove(moduleName);
 			}
 			

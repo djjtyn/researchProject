@@ -1,7 +1,6 @@
 package ifogsim.utils;
 
 public class GeoLocation {
-
 	private double latitude;
 	private double longitude;
 	
@@ -22,6 +21,5 @@ public class GeoLocation {
 	public void setLongitude(double longitude) {
 		this.longitude = longitude;
 	}
-	
-	
+
 }

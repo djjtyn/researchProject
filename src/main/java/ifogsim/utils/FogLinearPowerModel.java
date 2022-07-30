@@ -1,7 +1,6 @@
 package ifogsim.utils;
 
 import cloudsim.power.models.PowerModel;
-
 /**
  * The Class PowerModelLinear.
  * 
@@ -19,7 +18,6 @@ import cloudsim.power.models.PowerModel;
  * @since CloudSim Toolkit 2.0
  */
 public class FogLinearPowerModel implements PowerModel {
-
 	/** The max power. */
 	private double maxPower;
 

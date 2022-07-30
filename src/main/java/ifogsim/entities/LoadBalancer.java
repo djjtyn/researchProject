@@ -1,5 +1,4 @@
 package ifogsim.entities;
-
 /**
  * Created by Samodha Pallewatta
  */

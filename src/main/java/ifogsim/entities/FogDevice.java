@@ -218,11 +218,7 @@ public class FogDevice extends PowerDatacenter {
         AppModule appModule = (AppModule) object.get("module");
         NetworkUsageMonitor.sendingModule((double) object.get("delay"), appModule.getSize());
         MigrationDelayMonitor.setMigrationDelay((double) object.get("delay"));
-
-
         sendNow(getId(), FogEvents.RELEASE_MODULE, appModule);
-
-
     }
 
     protected void moduleReceive(SimEvent ev) {
@@ -232,7 +228,6 @@ public class FogDevice extends PowerDatacenter {
         Application app = (Application) object.get("application");
         NetworkUsageMonitor.sendingModule((double) object.get("delay"), appModule.getSize());
         MigrationDelayMonitor.setMigrationDelay((double) object.get("delay"));
-
         sendNow(getId(), FogEvents.APP_SUBMIT, app);
         sendNow(getId(), FogEvents.LAUNCH_MODULE, appModule);
     }
@@ -675,19 +670,21 @@ public class FogDevice extends PowerDatacenter {
     protected void executeTuple(SimEvent ev, String moduleName) {
         Tuple tuple = (Tuple) ev.getData();
         AppModule module = getModuleByName(moduleName);
+        System.out.println(moduleName + " received " + tuple.getTupleType());
         
-        //Check if the execution is being done using the orchestratorModule of the PatientMonitorOrchestrator device 
-        if(moduleName.equals("orchestratorModule") && this.getName().startsWith("PatientMonitorO")) {
-        	//Determine the priority level of the request
-        	String priorityLevel = determinePriority(tuple.getTupleValue(), tuple.getTupleType());
-        	//If the priority of the request is anything other than p1 use serverless functions
-        	if(!priorityLevel.equals("p1")) {
-        		//Invoke a Lambda function passing in the sensors and SNS topic information 
-        		LambdaInvoke.transmitTupleData(tuple.getSensorSourceName(), tuple.getTupleType(), tuple.getTupleValue(), module.getSNSTopicName());
-        		System.out.println("Invoked Lambda function");
-        		return;
-        	}
-        }
+//        //Check if the execution is being done using the orchestratorModule of the PatientMonitor device 
+//        if(moduleName.equals("orchestratorModule") && this.getName().startsWith("PatientMonitor")) {
+//        	//Determine the priority level of the request
+//        	String priorityLevel = determinePriority(tuple.getTupleValue(), tuple.getTupleType());
+//        	System.out.println(tuple.getTupleType() + " identified as Priority: " + priorityLevel);
+//        	//If the priority of the request is anything other than p1 use serverless functions
+//        	if(!priorityLevel.equals("p1")) {
+//        		//Invoke a Lambda function passing in the sensors and SNS topic information 
+//        		//LambdaInvoke.transmitTupleData(tuple.getSensorSourceName(), tuple.getTupleType(), tuple.getTupleValue(), module.getSNSTopicName());
+//        		System.out.println("Invoked Lambda function");
+//        		return;
+//        	}
+//        }
         if (tuple.getDirection() == Tuple.UP) {
             String srcModule = tuple.getSrcModuleName();
             if (!module.getDownInstanceIdsMaps().containsKey(srcModule))

@@ -27,10 +27,7 @@ public class Sensor extends SimEntity{
 	private int controllerId;
 	private Application app;
 	private double latency;
-	
-	//Values set at -1 to represent that sensor values haven't been set yet
-	private int initialHeartRateSensorValue;
-	//boolean initialSensorValue = true;
+	private int initialSensorValue;
 	
 	
 	
@@ -81,7 +78,7 @@ public class Sensor extends SimEntity{
 		setTupleType(tupleType);
 		setSensorName(tupleType);
 		setUserId(userId);
-		this.setInitialHeartRateSensorValue(initialSensorVal);
+		this.setInitialSensorValue(initialSensorVal);
 	}
 	
 	public Sensor(String name, String tupleType, int userId, String appId, Distribution transmitDistribution) {
@@ -93,38 +90,36 @@ public class Sensor extends SimEntity{
 		setUserId(userId);
 	}
 	
-	//int loop = 0;
-	
 	public void transmit(){
-		AppEdge _edge = null;
-		for(AppEdge edge : getApp().getEdges()){
-			if(edge.getSource().equals(getTupleType()))
-				_edge = edge;
+		try {
+			AppEdge _edge = null;
+			for(AppEdge edge : getApp().getEdges()){
+				if(edge.getSource().equals(getTupleType()))
+					_edge = edge;
+			}
+			long cpuLength = (long) _edge.getTupleCpuLength();
+			long nwLength = (long) _edge.getTupleNwLength();
+			Tuple tuple = new Tuple(getAppId(), FogUtils.generateTupleId(), Tuple.UP, cpuLength, 1, nwLength, outputSize, 
+					new UtilizationModelFull(), new UtilizationModelFull(), new UtilizationModelFull());
+			tuple.setUserId(getUserId());
+			
+			//Allow Lambda functions to retrieve sensor identifiers 
+			tuple.setTupleType(getTupleType());
+			tuple.setSensorSourceName(this.getName());
+			//Allow each sensor to transmit a value
+			int sensorValue = generateRandomSensorData();
+			tuple.setTupleValue(sensorValue);
+			tuple.setDestModuleName(_edge.getDestination());
+			tuple.setSrcModuleName(getSensorName());
+	
+			tuple.setDestinationDeviceId(getGatewayDeviceId());
+			int actualTupleId = updateTimings(getSensorName(), tuple.getDestModuleName());
+			tuple.setActualTupleId(actualTupleId);			
+			send(gatewayDeviceId, getLatency(), FogEvents.TUPLE_ARRIVAL,tuple);
+		} catch (Exception e) {
+			System.out.println("Issue transmitting sensor data");
+			e.printStackTrace();
 		}
-		long cpuLength = (long) _edge.getTupleCpuLength();
-		long nwLength = (long) _edge.getTupleNwLength();
-		Tuple tuple = new Tuple(getAppId(), FogUtils.generateTupleId(), Tuple.UP, cpuLength, 1, nwLength, outputSize, 
-				new UtilizationModelFull(), new UtilizationModelFull(), new UtilizationModelFull());
-		tuple.setUserId(getUserId());
-		
-		//Allow Lambda functions to retrieve sensor identifiers 
-		tuple.setTupleType(getTupleType());
-		tuple.setSensorSourceName(this.getName());
-		
-		//Allow each sensor to transmit a value
-		int sensorValue = generateRandomSensorData();
-		tuple.setTupleValue(sensorValue);	//Manually set so runtime duration can be assessed on ec2 to prevent interference caused by other local running resources
-		
-		tuple.setDestModuleName(_edge.getDestination());
-		tuple.setSrcModuleName(getSensorName());
-		Logger.debug(getName(), "Sending tuple with tupleId = "+tuple.getCloudletId());
-
-		tuple.setDestinationDeviceId(getGatewayDeviceId());
-		//System.out.println(tuple.getSrcModuleName() + " sending " + getTupleType() + " to " + tuple.getDestModuleName());
-		int actualTupleId = updateTimings(getSensorName(), tuple.getDestModuleName());
-		tuple.setActualTupleId(actualTupleId);
-		
-		send(gatewayDeviceId, getLatency(), FogEvents.TUPLE_ARRIVAL,tuple); 
 	}
 	
 	protected int updateTimings(String src, String dest){
@@ -266,12 +261,12 @@ public class Sensor extends SimEntity{
 		return transmissionStartDelay;
 	}
 	
-	public void setInitialHeartRateSensorValue(int initialValue) {
-		this.initialHeartRateSensorValue = initialValue;
+	public void setInitialSensorValue(int initialValue) {
+		this.initialSensorValue = initialValue;
 	}
 	
-	public int getInitialHeartRateSensorValue() {
-		return this.initialHeartRateSensorValue;
+	public int getInitialSensorValue() {
+		return this.initialSensorValue;
 	}
 	
 
@@ -280,7 +275,7 @@ public class Sensor extends SimEntity{
 	private int generateRandomSensorData() {
 		Random random = new Random();
 		//generate a random number to represent fluctuations of a patients initial sensor data(Range of 5 above/below intitial sensor data)
-		int randomNumber = random.nextInt((this.getInitialHeartRateSensorValue() + 5) + 1 - (this.getInitialHeartRateSensorValue() - 5)) + (this.getInitialHeartRateSensorValue() - 5);
+		int randomNumber = random.nextInt((this.getInitialSensorValue() + 5) + 1 - (this.getInitialSensorValue() - 5)) + (this.getInitialSensorValue() - 5);
 		//Ensure that the random number is >== before transmitting it to avoid sending invalid sensor values
 		if(randomNumber < 0) {
 			randomNumber = 0;

@@ -66,6 +66,7 @@ public class ModulePlacementMobileEdgewards extends ModulePlacement{
 			for(String moduleName : getModuleMapping().getModuleMapping().get(deviceName)){
 				int deviceId = CloudSim.getEntityId(deviceName);
 				getCurrentModuleMap().get(deviceId).add(moduleName);
+				System.out.println(moduleName + " mapping to " + deviceName);
 				getCurrentModuleLoadMap().get(deviceId).put(moduleName, 0.0);
 				getCurrentModuleInstanceNum().get(deviceId).put(moduleName, 0);
 			}

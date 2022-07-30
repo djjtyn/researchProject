@@ -38,282 +38,285 @@ import ifogsim.utils.distribution.DeterministicDistribution;
 import serverlessStubs.SNSTopic;
 
 public class HospitalSimulation {
-	
 
-	static int oxygenSaturationSensorInitialValue = 95;
-	static int respiratoryRateSensorInitialValue = 15;
-		
 	public static void main(String[] args) {
 		Log.printLine("Starting Hopital Simulation");
-		String SNSTopicName = "PatientMonitor";
-		//Create an SNS Topic prior to the publish of any messages 
-		try {
-			SNSTopic.createSNSTopic(SNSTopicName);
-		} catch(Exception e) {
-			e.printStackTrace();
-			return;
-		}
-		startSim(SNSTopicName);
+		// Create an SNS Topic prior to the publish of any messages
+//		try {
+//			SNSTopic.createSNSTopic("PatientMonitor");
+//		} catch(Exception e) {
+//			e.printStackTrace();
+//			return;
+//		}
+
+//		try {
+//		SNSTopic.subscribeToTopic();
+//	} catch(Exception e) {
+//		e.printStackTrace();
+//		return;
+//	}
+		startSim("Test");
 	}
-	
+
 	public static void startSim(String SNSTopicName) {
-		try {						
-			//Instantiate the Cloudsim class 
+		try {
+			// Instantiate the Cloudsim class
 			try {
 				Log.disable();
 				int num_user = 1; // number of cloud users
 				Calendar calendar = Calendar.getInstance();
 				boolean trace_flag = false; // mean trace events
 				CloudSim.init(num_user, calendar, trace_flag);
-			} catch(Exception e) {
+			} catch (Exception e) {
 				e.printStackTrace();
 				return;
 			}
-			
+
 			try {
 				String appId = "SmartHospital"; // identifier of the application
-				int numOfHospitalWings = 10;	
-				int numOfpatientsPerWing = 10;	
+				int numOfHospitalWings = 1;
+				int numOfpatientsPerWing = 1;
 				FogBroker broker = new FogBroker("broker");
 				Application application = createApplication(appId, broker.getId(), SNSTopicName);
 				application.setUserId(broker.getId());
-				List<FogDevice> fogDevices = new ArrayList<FogDevice>(); //List to store each component
-				List<Sensor> sensors = new ArrayList<Sensor>();	//List to store all sensors
-				List<Actuator> actuators = new ArrayList<Actuator>();	//List to store all actuators
+				List<FogDevice> fogDevices = new ArrayList<FogDevice>(); // List to store each component
+				List<Sensor> sensors = new ArrayList<Sensor>(); // List to store all sensors
+				List<Actuator> actuators = new ArrayList<Actuator>(); // List to store all actuators
 				ModuleMapping moduleMapping = ModuleMapping.createModuleMapping();
 				// Create all devices in the FEC environment
-				try { 
-					createFogDevices(broker.getId(), appId, fogDevices, numOfHospitalWings, actuators, numOfpatientsPerWing, sensors);
-				} catch(Exception e) {
-					e.printStackTrace();
-					return;
-				}
-				
-				//Assign the application modules to their designated fog devices
 				try {
-					for(FogDevice device : fogDevices){
-						//Add the orchestratorModule module to the orchestrator components
-						if(device.getName().startsWith("PatientMonitorO")) {
-							moduleMapping.addModuleToDevice("orchestratorModule", device.getName());
-						}
-						
-						//Assign modules to each individual PatientMonitor device to allow each monitor to monitor sensor data
-						if(device.getName().startsWith("PatientMonitor-")){
-							moduleMapping.addModuleToDevice("heartRateModule", device.getName());	//Attach module to read heart rate sensor data
-							moduleMapping.addModuleToDevice("bloodPressureModule", device.getName());	//Attach module to read blood pressure sensor data
-							//moduleMapping.addModuleToDevice("o2SatModule", device.getName());	//Attach module to read blood pressure sensor data
-							//moduleMapping.addModuleToDevice("respRateModule", device.getName());	//Attach module to read respiratory rate sensor data
-						}
-					}
-				} catch(Exception e) {
+					createFogDevices(broker.getId(), appId, fogDevices, numOfHospitalWings, actuators,
+							numOfpatientsPerWing, sensors);
+					// Assign the application modules to their designated fog devices
+					moduleMapping = mapApplicationModules(moduleMapping, fogDevices);
+				} catch (Exception e) {
 					e.printStackTrace();
 					return;
 				}
-				
 				boolean CLOUD = false;
-				Controller controller = new Controller("master-controller", fogDevices, sensors, 
-						actuators);
-				
-				controller.submitApplication(application, 
-						(CLOUD)?(new ModulePlacementMapping(fogDevices, application, moduleMapping))
-								:(new ModulePlacementEdgewards(fogDevices, sensors, actuators, application, moduleMapping)));
-				
-				TimeKeeper.getInstance().setSimulationStartTime(Calendar.getInstance().getTimeInMillis());
-				
-				CloudSim.startSimulation();
+				Controller controller = new Controller("master-controller", fogDevices, sensors, actuators);
 
+				controller.submitApplication(application, (CLOUD)
+						? (new ModulePlacementMapping(fogDevices, application, moduleMapping))
+						: (new ModulePlacementEdgewards(fogDevices, sensors, actuators, application, moduleMapping)));
+
+				TimeKeeper.getInstance().setSimulationStartTime(Calendar.getInstance().getTimeInMillis());
+				CloudSim.startSimulation();
 				CloudSim.stopSimulation();
-				
-			} catch(Exception e) {
+
+			} catch (Exception e) {
 				e.printStackTrace();
 				return;
 			}
-		} catch(Exception e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
-	
+
 	@SuppressWarnings("serial")
-	private static Application createApplication(String appId, int userId, String SNSTopicName){	
-		
+	private static Application createApplication(String appId, int userId, String SNSTopicName) {
 		Application application = Application.createApplication(appId, userId);
-		application.addAppModule("heartRateModule", 10);	//AppModule to monitor patient heart rate
-		application.addAppModule("bloodPressureModule", 10);	//AppModule to monitor patient blood pressure
-		application.addOrchestratorAppModule("orchestratorModule", 10, SNSTopicName);	//AppModule to monitor determine serverless function/FEC environment resources - also takes SNSTpic Name to enable message publishing to correct topic
-		//application.addAppModule("o2SatModule", 10);	//AppModule to monitor patient o2 saturation
-		//application.addAppModule("respRateModule", 10);	//AppModule to monitor patient respiratory rate
-		//application.addAppModule("patientVitalsModule", 10);
-//		//application.addAppModule("triggerAlert", 10);
 		
-		
-		application.addAppEdge("heartRate", "heartRateModule", 50, 50, "heartRate", Tuple.UP, AppEdge.SENSOR);	//Heart rate sensor -> heartRateModule: heartRate tuple communication
-		application.addAppEdge("heartRateModule", "orchestratorModule", 50, 50, "heartRateData", Tuple.UP, AppEdge.MODULE);
-		//application.addAppEdge("heartRateModule", "PATIENTMONITORDISPLAY", 100, 28, 100, "heartRateData", Tuple.DOWN, AppEdge.ACTUATOR);
-		//application.addAppEdge("heartRateModule", "alarm", 100, 28, 100, "heartRateData", Tuple.UP, AppEdge.ACTUATOR);
-		//application.addAppEdge("heartRateModule", "patientVitalsModule", 1000, 20000, "processedHeartRateData", Tuple.DOWN, AppEdge.MODULE);
+		//Add application modules that are used by all sensors
+		application.addOrchestratorAppModule("orchestratorModule",10, SNSTopicName);
+		application.addAppModule("patientMonitorMasterModule", 10);
 
-		application.addAppEdge("bloodPressure", "bloodPressureModule", 50, 50, "bloodPressure", Tuple.UP, AppEdge.SENSOR);	//Blood pressure sensor -> bloodPressureModule: BLOODPRESSURE tuple communication
-		application.addAppEdge("bloodPressureModule", "orchestratorModule", 50, 50, "bloodPressureData", Tuple.UP, AppEdge.MODULE);
-		//    	application.addAppEdge("bloodPressureModule", "PATIENTMONITORDISPLAY", 100, 28, 100, "bloodPressureData", Tuple.DOWN, AppEdge.ACTUATOR);	
-//		
-//    	application.addAppEdge("o2Saturation", "o2SatModule", 1000, 20000, "o2Saturation", Tuple.UP, AppEdge.SENSOR);	//o2 Saturation sensor -> o2SatModule: O2SATURATION tuple communication
-//    	application.addAppEdge("o2SatModule", "orchestratorModule", 2000, 2000, "o2SaturationData", Tuple.UP, AppEdge.MODULE);
-    	
-    	//application.addAppEdge("respiratoryRate", "respRateModule", 1000, 20000, "respiratoryRate", Tuple.UP, AppEdge.SENSOR);	//Respiratory rate sensor -> respRateModule: RESPIRATORYRATE tuple communication
-    	//application.addAppEdge("respRateModule", "orchestratorModule", 2000, 2000, "respiratoryRateData", Tuple.UP, AppEdge.MODULE);
-//		//Communication between individual patient monitors and hospital wing master monitor
-//
-//		
-		// Application module Input/Outputs
-		application.addTupleMapping("heartRateModule", "heartRate", "heartRateData", new FractionalSelectivity(1.0)); // heartRateModule(heartRate) returns heartRateData
-		application.addTupleMapping("orchestratorModule", "heartRateData", "heartRateData", new FractionalSelectivity(1.0)); // heartRateModule(heartRate) returns heartRateSTREAM
-    	
-		application.addTupleMapping("bloodPressureModule", "bloodPressure", "bloodPressureData", new FractionalSelectivity(1.0)); // bloodPressureModule(BLOODPRESSURE) returns BLOODPRESURESTREAM
-    	application.addTupleMapping("orchestratorModule", "bloodPressureData", "bloodPressureData", new FractionalSelectivity(1.0));
-    	
-//    	application.addTupleMapping("o2SatModule", "o2Saturation", "o2SaturationData", new FractionalSelectivity(1.0)); // o2SatModule(O2SATURATION) returns O2SATURATIONSTREAM
-//    	application.addTupleMapping("orchestratorModule", "o2SaturationData", "o2SaturationData", new FractionalSelectivity(1.0));
-    	
-    	//application.addTupleMapping("respRateModule", "respiratoryRate", "respiratoryRateData", new FractionalSelectivity(1.0)); // respRateModule(RESPIRATORYRATE) returns RESPIRATORYRATESTREAM
-    	//application.addTupleMapping("orchestratorModule", "respiratoryRateData", "respiratoryRateData", new FractionalSelectivity(1.0));
-    	
-    	//application.addTupleMapping("heartRateModule", "heartRateRawData", "processedHeartRateData", new FractionalSelectivity(1.0)); // heartRateModule(heartRate) returns heartRateSTREAM
-		//application.addTupleMapping("patientVitalsModule", "processedHeartRateData", "heartData", new FractionalSelectivity(1.0)); // heartRateModule(heartRate) returns heartRateSTREAM
+		createAppModuleFlow(application, "heartRate"); // Set application module, edges and tuple mappings for heart rate sensors
+		createAppModuleFlow(application, "bloodPressure"); // Set application module, edges and tuple mappings for blood pressure sensors
+		createAppModuleFlow(application, "o2Saturation"); // Set application module, edges and tuple mappings for o2Saturation sensors
+		createAppModuleFlow(application, "respiratoryRate"); // Set application module, edges and tuple mappings for respiratory rate sensors
 
-
-
-		 
-		// Application loops
-		final AppLoop heartRateMonitorLoop = new AppLoop(new ArrayList<String>() {
+		// All loops added to this list are created through invoking the createAppLoop method with a relevant loop argument
+		List<AppLoop> loops = new ArrayList<AppLoop>() {
 			{
-				add("heartRate");
-				add("heartRateModule");
-				add("orchestratorModule");
-				//add("PATIENTMONITORDISPLAY");
-			}
-		});
-		final AppLoop bloodPressureMonitorLoop = new AppLoop(new ArrayList<String>() {
-			{
-				add("bloodPressure");
-				add("bloodPressureModule");
-				add("orchestratorModule");
-				//add("PATIENTMONITORDISPLAY");
-			}
-		});
-		final AppLoop o2SatMonitorLoop = new AppLoop(new ArrayList<String>() {
-			{
-				add("o2Saturation");
-				add("o2SatModule");
-				add("orchestratorModule");
-			}
-		});
-		final AppLoop respRateMonitorLoop = new AppLoop(new ArrayList<String>() {
-			{
-				add("respiratoryRate");
-				add("respRateModule");
-				add("orchestratorModule");
-			}
-		});
-		
-		
-		
-		
-		List<AppLoop> loops = new ArrayList<AppLoop>(){
-			{
-				add(heartRateMonitorLoop);
-				add(bloodPressureMonitorLoop);
-				//add(o2SatMonitorLoop);
-				//add(respRateMonitorLoop);
+				add(createAppLoop("heartRate"));
+				add(createAppLoop("bloodPressure"));
+				add(createAppLoop("o2Saturation"));
+				add(createAppLoop("respiratoryRate"));
 			}
 		};
-		
 		application.setLoops(loops);
 		return application;
 	}
-	
-	//Method to create all fog devices for the simulation
-	private static void createFogDevices(int userId, String appId, List<FogDevice> fogDevices, int numOfHospitalWings, List<Actuator> actuators, int numOfpatientsPerWing, List<Sensor> sensors) {
-		//Create Cloud Device at level 0
-		FogDevice cloud = createFogDevice("cloud", "cloud", 0);	//createFogDevice method required device type and its level as arguments
+
+	private static void createAppModuleFlow(Application application, String module) {
+		application.addAppModule(module + "Module", 10);
+		// Mapping for the sensor to its value collection module
+		application.addAppEdge(module, module + "Module", 50, 50, module, Tuple.UP, AppEdge.SENSOR);
+		// Mapping for collection module to orchestrator module
+		application.addAppEdge(module + "Module", "orchestratorModule", 50, 50, module + "Data", Tuple.UP, AppEdge.MODULE);
+		//application.addAppEdge("orchestratorModule", "patientMonitorMasterModule",50, 50, module+"Data", Tuple.UP, AppEdge.MODULE);
+		//application.addAppEdge("patientMonitorMasterModule", "monitorMasterDisplay",50, 50, module+"Data", Tuple.DOWN, AppEdge.ACTUATOR);
+		// Application module Input/Outputs
+		application.addTupleMapping(module + "Module", module, module + "Data", new FractionalSelectivity(1.0));
+		application.addTupleMapping("orchestratorModule", module+"Data",module+"Data", new FractionalSelectivity(1.0));
+		// application.addTupleMapping("patientMonitorMasterModule", module+"Data", module+"Data", new FractionalSelectivity(1.0));
+	}
+
+	private static ModuleMapping mapApplicationModules(ModuleMapping moduleMapping, List<FogDevice> fogDevices) {
+		// Assign the application modules to their designated fog devices
+		try {
+			for (FogDevice device : fogDevices) {
+				// Assign modules to each individual PatientMonitor device to allow each monitorto monitor sensor data
+				if (device.getName().startsWith("PatientMonitor-")) {
+					moduleMapping.addModuleToDevice("heartRateModule", device.getName()); // Attach module to read heart rate sensor data
+					moduleMapping.addModuleToDevice("bloodPressureModule", device.getName()); // Attach module to read blood pressure sensor data
+					moduleMapping.addModuleToDevice("o2SaturationModule", device.getName()); // Attach module to read o2 saturation sensor data
+					moduleMapping.addModuleToDevice("respiratoryRateModule", device.getName()); // Attach module to read respiratory rate sensor data
+					moduleMapping.addModuleToDevice("orchestratorModule", device.getName()); // Attach orchestrator module to each patient monitor device
+				}
+				if (device.getName().startsWith("patientMonitorMaster")) {
+					moduleMapping.addModuleToDevice("patientMonitorMasterModule", device.getName());
+				}
+			}
+			return moduleMapping;
+		} catch (Exception e) {
+			System.out.println("Error mapping application modules");
+			e.printStackTrace();
+			return null;
+		}
+	}
+
+	// This method will be used to create AppLoops
+	private static AppLoop createAppLoop(String loopType) {
+		@SuppressWarnings("serial")
+		AppLoop loop = new AppLoop(new ArrayList<String>() {
+			// Each loop will contain its argument value, Module appended to the argument
+			// value and orchestrator module
+			{
+				add(loopType);
+				add(loopType + "Module");
+				add("orchestratorModule");
+				//add("patientMonitorMasterModule");
+				// add("monitorMasterDisplay");
+			}
+		});
+		return loop;
+	}
+
+	// Method to create all fog devices for the simulation
+	private static void createFogDevices(int userId, String appId, List<FogDevice> fogDevices, int numOfHospitalWings,
+			List<Actuator> actuators, int numOfpatientsPerWing, List<Sensor> sensors) {
+		// Create Cloud Device at level 0
+		FogDevice cloud = createFogDevice("cloud", "cloud", 0); // createFogDevice method required device type and its
+																// level as arguments
 		cloud.setParentId(-1);
 		fogDevices.add(cloud);
-		
-		//Create proxy-server device at level 1
-		FogDevice proxy = createFogDevice("proxy-server","Pi3BPlus", 1);
+
+		// Create proxy-server device at level 1
+		FogDevice proxy = createFogDevice("proxy-server", "Pi3BPlus", 1);
 		proxy.setParentId(cloud.getId());
 		proxy.setUplinkLatency(100); // latency of connection between proxy server and cloud is 100 ms
 		fogDevices.add(proxy);
-		
-		//Loop through each hospital wing and assign patient monitor
+
+		// Loop through each hospital wing and assign patient monitor
 		String wingIdentifier;
-		
-		//All sensors will need an initial value which will be assigned using array values to allow simulation duplications
+
+		// All sensors will need an initial value which will be assigned using array
+		// values to allow simulation duplications
 		int[] heartrateSensorInitialValues = new int[numOfpatientsPerWing];
 		int[] bloodPressureSensorInitialValues = new int[numOfpatientsPerWing];
-		
-		//Implement hospital wing with specific identifiers and sensor initial values for each
-		for(int i=0;i<numOfHospitalWings;i++){
-			switch(i) {
-			case 0: 
+		int[] o2SaturationSensorInitialValues = new int[numOfpatientsPerWing];
+		int[] respiratoryrateSensorInitialValues = new int[numOfpatientsPerWing];
+
+		// Implement hospital wing with specific identifiers and sensor initial values
+		// for each
+		for (int i = 0; i < numOfHospitalWings; i++) {
+			switch (i) {
+			case 0:
 				wingIdentifier = "WingA";
-				heartrateSensorInitialValues = new int[]{35,45,55,65,75,85,95,105,115,40};
-				bloodPressureSensorInitialValues = new int[] {66,79,73,115,78,84,70,73,134,104};
+				heartrateSensorInitialValues = new int[] { 35, 45, 55, 65, 75, 85, 95, 105, 115, 40 };
+				bloodPressureSensorInitialValues = new int[] { 66, 79, 73, 115, 78, 84, 70, 73, 134, 104 };
+				o2SaturationSensorInitialValues = new int[] { 98, 99, 99, 96, 93, 94, 93, 99, 97, 100 };
+				respiratoryrateSensorInitialValues = new int[] { 13, 14, 14, 16, 15, 13, 15, 13, 14, 13 };
 				break;
-			case 1:	
-				wingIdentifier = "WingB";
-				heartrateSensorInitialValues = new int[]{50,82,22,80,70,90,92,68,70,46};
-				bloodPressureSensorInitialValues = new int[] {131,112,120,117,91,98,68,51,95,82};
+//			case 1:	
+//				wingIdentifier = "WingB";
+//				heartrateSensorInitialValues = new int[]{50,82,22,80,70,90,92,68,70,46};
+//				bloodPressureSensorInitialValues = new int[] {131,112,120,117,91,98,68,51,95,82};
+			// o2SaturationSensorInitialValues = new int[] {98,97,98,95,93,95,96,97,100,99};
+			// respiratoryrateSensorInitialValues = new int[]
+			// {16,12,15,16,15,11,12,12,10,15};
+//				break;
+//			case 2:	
+//				wingIdentifier = "WingC";
+//				heartrateSensorInitialValues = new int[]{80,68,45,110,105,100,68,79,84,37};
+//				bloodPressureSensorInitialValues = new int[] {59,68,112,73,85,86,87,106,128,66};
+			// o2SaturationSensorInitialValues = new int[]
+			// {87,96,99,100,86,96,95,92,85,100};
+			// respiratoryrateSensorInitialValues = new int[]
+			// {13,14,12,15,12,13,15,16,14,13};
+//				break;
+//			case 3:	
+//				wingIdentifier = "WingD";
+//				heartrateSensorInitialValues = new int[]{90,58,64,28,70,90,92,68,70,46};
+//				bloodPressureSensorInitialValues = new int[] {79,110,94,116,92,82,121,53,71,118};
+			// o2SaturationSensorInitialValues = new int[] {95,91,93,86,91,96,93,89,87,100};
+			// respiratoryrateSensorInitialValues = new int[]
+			// {14,12,18,12,14,14,12,16,17,12};
+//				break;
+//			case 4:	
+//				wingIdentifier = "WingE";
+//				heartrateSensorInitialValues = new int[]{50,73,81,94,88,77,90,60,90,33};
+//				bloodPressureSensorInitialValues = new int[] {105,75,84,118,77,119,58,94,109,117};
+			// o2SaturationSensorInitialValues = new int[] {90,93,99,89,91,89,90,96,99,92};
+			// respiratoryrateSensorInitialValues = new int[]
+			// {18,17,16,17,17,18,17,17,12,17};
+//				break;
+//			case 5:	
+//				wingIdentifier = "WingF";
+//				heartrateSensorInitialValues = new int[]{80,63,90,75,80,70,77,82,75,68};
+//				bloodPressureSensorInitialValues = new int[] {129,61,99,87,57,107,109,57,137,99};
+			// o2SaturationSensorInitialValues = new int[]
+			// {100,95,98,93,100,92,93,94,97,97};
+			// respiratoryrateSensorInitialValues = new int[]
+			// {14,12,13,13,12,15,14,12,12,12};
+//				break;
+//			case 6:	
+//				wingIdentifier = "WingG";
+//				heartrateSensorInitialValues = new int[]{70,83,81,74,78,87,95,68,96,43};
+//				bloodPressureSensorInitialValues = new int[] {95,83,97,86,106,103,101,112,78,73};
+			// o2SaturationSensorInitialValues = new int[] {99,94,99,98,99,96,95,96,95,96};
+			// respiratoryrateSensorInitialValues = new int[]
+			// {14,15,14,17,15,18,13,17,15,17};
+//				break;
+//			case 7:	
+//				wingIdentifier = "WingH";
+//				heartrateSensorInitialValues = new int[]{70,73,80,92,96,93,88,70,70,83};
+//				bloodPressureSensorInitialValues = new int[] {117,114,102,68,102,67,66,65,50,53};
+			// o2SaturationSensorInitialValues = new int[] {96,95,98,97,100,95,99,95,95,96};
+			// respiratoryrateSensorInitialValues = new int[] {13,15,14,9,13,9,13,16,14,14};
+//				break;
+//			case 8:	
+//				wingIdentifier = "WingI";
+//				heartrateSensorInitialValues = new int[]{78,76,85,74,78,74,80,50,48,63};
+//				bloodPressureSensorInitialValues = new int[] {121,54,97,65,67,88,102,63,110,110};
+			// o2SaturationSensorInitialValues = new int[]
+			// {99,95,100,98,97,99,99,100,96,97};
+			// respiratoryrateSensorInitialValues = new int[]
+			// {14,14,12,14,14,13,14,13,12,15};
+//				break;
+//			case 9:	
+//				wingIdentifier = "WingJ";
+//				heartrateSensorInitialValues = new int[]{50,73,81,94,88,77,90,60,90,33};
+//				bloodPressureSensorInitialValues = new int[] {50,122,114,86,62,77,56,66,54,121};
+			// o2SaturationSensorInitialValues = new int[] {93,99,99,93,96,95,97,98,96,95};
+			// respiratoryrateSensorInitialValues = new int[]
+			// {15,13,12,12,13,13,15,12,15,15};
+//				break;
+			default:
+				wingIdentifier = "Invalid Wing";
 				break;
-			case 2:	
-				wingIdentifier = "WingC";
-				heartrateSensorInitialValues = new int[]{80,68,45,110,105,100,68,79,84,37};
-				bloodPressureSensorInitialValues = new int[] {59,68,112,73,85,86,87,106,128,66};
-				break;
-			case 3:	
-				wingIdentifier = "WingD";
-				heartrateSensorInitialValues = new int[]{90,58,64,28,70,90,92,68,70,46};
-				bloodPressureSensorInitialValues = new int[] {79,110,94,116,92,82,121,53,71,118};
-				break;
-			case 4:	
-				wingIdentifier = "WingE";
-				heartrateSensorInitialValues = new int[]{50,73,81,94,88,77,90,60,90,33};
-				bloodPressureSensorInitialValues = new int[] {105,75,84,118,77,119,58,94,109,117};
-				break;
-			case 5:	
-				wingIdentifier = "WingF";
-				heartrateSensorInitialValues = new int[]{80,63,90,75,80,70,77,82,75,68};
-				bloodPressureSensorInitialValues = new int[] {129,61,99,87,57,107,109,57,137,99};
-				break;
-			case 6:	
-				wingIdentifier = "WingG";
-				heartrateSensorInitialValues = new int[]{70,83,81,74,78,87,95,68,96,43};
-				bloodPressureSensorInitialValues = new int[] {95,83,97,86,106,103,101,112,78,73};
-				break;
-			case 7:	
-				wingIdentifier = "WingH";
-				heartrateSensorInitialValues = new int[]{70,73,80,92,96,93,88,70,70,83};
-				bloodPressureSensorInitialValues = new int[] {117,114,102,68,102,67,66,65,50,53};
-				break;
-			case 8:	
-				wingIdentifier = "WingI";
-				heartrateSensorInitialValues = new int[]{78,76,85,74,78,74,80,50,48,63};
-				bloodPressureSensorInitialValues = new int[] {121,54,97,65,67,88,102,63,110,110};
-				break;
-			case 9:	
-				wingIdentifier = "WingJ";
-				heartrateSensorInitialValues = new int[]{50,73,81,94,88,77,90,60,90,33};
-				bloodPressureSensorInitialValues = new int[] {50,122,114,86,62,77,56,66,54,121};
-				break;
-			default: wingIdentifier = "Invalid Wing";
-					break;
 			}
-			addHospitalWing(wingIdentifier, userId, appId, proxy.getId(), fogDevices, actuators, numOfpatientsPerWing, sensors, heartrateSensorInitialValues, bloodPressureSensorInitialValues);
+			addHospitalWing(wingIdentifier, userId, appId, proxy.getId(), fogDevices, actuators, numOfpatientsPerWing,
+					sensors, heartrateSensorInitialValues, bloodPressureSensorInitialValues,
+					o2SaturationSensorInitialValues, respiratoryrateSensorInitialValues);
 		}
 	}
-	
+
 	private static FogDevice createFogDevice(String nodeName, String deviceType, int level) {
 		try {
-			//Default iFogSim provided variable values
+			// Default iFogSim provided variable values
 			List<Pe> peList = new ArrayList<Pe>();
 			int hostId = FogUtils.generateEntityId();
 			long storage = 1000000; // host storage
@@ -328,117 +331,147 @@ public class HospitalSimulation {
 			double costPerStorage = 0.001; // the cost of using storage in this resource
 			double costPerBw = 0.0; // the cost of using bw in this resource
 			LinkedList<Storage> storageList = new LinkedList<Storage>(); // we are not adding SAN devices by now
-		
+
 			// Check which device type to be created and instantiante a FogDevice for it
-			if(deviceType == "cloud") {
-				//Cloud variable values will use default values provided by iFogSim
-				peList.add(new Pe(0, new PeProvisionerOverbooking(44800))); 
-				PowerHost host = new PowerHost(hostId, new RamProvisionerSimple(40000), new BwProvisionerOverbooking(bw), storage, peList, new StreamOperatorScheduler(peList), new FogLinearPowerModel(16*103, 16*83.25));
+			if (deviceType == "cloud") {
+				// Cloud variable values will use default values provided by iFogSim
+				peList.add(new Pe(0, new PeProvisionerOverbooking(44800)));
+				PowerHost host = new PowerHost(hostId, new RamProvisionerSimple(40000),
+						new BwProvisionerOverbooking(bw), storage, peList, new StreamOperatorScheduler(peList),
+						new FogLinearPowerModel(16 * 103, 16 * 83.25));
 				hostList.add(host);
-				FogDeviceCharacteristics characteristics = new FogDeviceCharacteristics(arch, os, vmm, host, time_zone, cost, costPerMem, costPerStorage, costPerBw);
-				FogDevice fogDevice = new FogDevice(nodeName, characteristics, new AppModuleAllocationPolicy(hostList), storageList, 10, 100, 10000, 0, 0.0);
+				FogDeviceCharacteristics characteristics = new FogDeviceCharacteristics(arch, os, vmm, host, time_zone,
+						cost, costPerMem, costPerStorage, costPerBw);
+				FogDevice fogDevice = new FogDevice(nodeName, characteristics, new AppModuleAllocationPolicy(hostList),
+						storageList, 10, 100, 10000, 0, 0.0);
 				fogDevice.setLevel(level);
 				return fogDevice;
 			}
-			if(deviceType == "Pi3BPlus") {
-				peList.add(new Pe(0, new PeProvisionerOverbooking(2800))); 
-				PowerHost host = new PowerHost(hostId, new RamProvisionerSimple(1000), new BwProvisionerOverbooking(bw), storage, peList, new StreamOperatorScheduler(peList), new FogLinearPowerModel(107.339, 83.4333));
+			if (deviceType == "Pi3BPlus") {
+				peList.add(new Pe(0, new PeProvisionerOverbooking(2800)));
+				PowerHost host = new PowerHost(hostId, new RamProvisionerSimple(1000), new BwProvisionerOverbooking(bw),
+						storage, peList, new StreamOperatorScheduler(peList),
+						new FogLinearPowerModel(107.339, 83.4333));
 				hostList.add(host);
-				FogDeviceCharacteristics characteristics = new FogDeviceCharacteristics(arch, os, vmm, host, time_zone, cost, costPerMem, costPerStorage, costPerBw);
-				FogDevice fogDevice = new FogDevice(nodeName, characteristics, new AppModuleAllocationPolicy(hostList), storageList, 10, 10000, 10000, 0, 0.01);
+				FogDeviceCharacteristics characteristics = new FogDeviceCharacteristics(arch, os, vmm, host, time_zone,
+						cost, costPerMem, costPerStorage, costPerBw);
+				FogDevice fogDevice = new FogDevice(nodeName, characteristics, new AppModuleAllocationPolicy(hostList),
+						storageList, 10, 10000, 10000, 0, 0.01);
 				fogDevice.setLevel(level);
 				return fogDevice;
 			}
-		} catch(Exception e) {
-			//System.out.println("There was an issue creating the " + deviceType + " device at level " + level + " with name: " + nodeName);
+		} catch (Exception e) {
+			// System.out.println("There was an issue creating the " + deviceType + " device
+			// at level " + level + " with name: " + nodeName);
 			e.printStackTrace();
 			return null;
 		}
 		return null;
 	}
-	
-	private static FogDevice addHospitalWing(String id, int userId, String appId, int parentId, 
-			List<FogDevice> fogDevices, List<Actuator> actuators, int numOfpatientsPerWing, List<Sensor> sensors, 
-			int[] heartRateSensorInitialValues, int[] bloodPressureSensorInitialValues){
-		//Create router device for each hospital wing at level 2
-		FogDevice router = createFogDevice("router-"+id, "Pi3BPlus", 2);
+
+	private static FogDevice addHospitalWing(String id, int userId, String appId, int parentId,
+			List<FogDevice> fogDevices, List<Actuator> actuators, int numOfpatientsPerWing, List<Sensor> sensors,
+			int[] heartRateSensorInitialValues, int[] bloodPressureSensorInitialValues,
+			int[] o2SaturationSensorInitialValues, int[] respiratoryrateSensorInitialValues) {
+		// Create router device for each hospital wing at level 2
+		FogDevice router = createFogDevice("router-" + id, "Pi3BPlus", 2);
 		router.setUplinkLatency(2); // latency of connection between router and proxy server is 2 ms
 		router.setParentId(parentId);
 		fogDevices.add(router);
-		//PATIENT MONITOR COMPONENTS
-		//Create PatientMonitor Master Components at level 3
-		FogDevice patientMonitorMaster = createFogDevice("patientMonitorMaster-"+id, "Pi3BPlus", 3);
+		// PATIENT MONITOR COMPONENTS
+		// Create PatientMonitor Master Components at level 3
+		FogDevice patientMonitorMaster = createFogDevice("patientMonitorMaster-" + id, "Pi3BPlus", 3);
 		patientMonitorMaster.setUplinkLatency(2);
 		patientMonitorMaster.setParentId(router.getId());
-		fogDevices.add(patientMonitorMaster);	
-		
-		//Create PatientMonitor Orchestrator at level 4 as parent for each patient monitor device
-		FogDevice patientMonitorOrchestrator = createFogDevice("PatientMonitorOrchestrator-"+id, "Pi3BPlus", 4);
-		patientMonitorOrchestrator.setParentId(patientMonitorMaster.getId());
-		patientMonitorOrchestrator.setUplinkLatency(2);
-		fogDevices.add(patientMonitorOrchestrator);
-		
-		//Create an actuator to emit alarm sounds
-		Actuator alarm = new Actuator("alarm-" + id, userId, appId, "alarm");
-		alarm.setGatewayDeviceId(patientMonitorMaster.getId());
-		alarm.setLatency(1.0); 
-		actuators.add(alarm);	
-		
-		//Instantiate patient monitor devices with initial sensor values from arrays
-		for(int i=0;i<numOfpatientsPerWing;i++){
-			String patientMonitorUnitId = "PatientMonitor-"+ (i+1) + ":" + id;
-			FogDevice patientMonitor = addPatientMonitor(patientMonitorUnitId, userId, appId, patientMonitorOrchestrator.getId(), actuators, sensors, heartRateSensorInitialValues[i], bloodPressureSensorInitialValues[i]);
-			patientMonitor.setUplinkLatency(2); // latency of connection between camera and router is 2 ms
+		fogDevices.add(patientMonitorMaster);
+
+		// Create an actuator to display sensor info of all wing patients in a master
+		// display
+		Actuator patientMonitorMasterDisplay = new Actuator("MonitorMasterDisplay-" + id, userId, appId,
+				"monitorMasterDisplay");
+		patientMonitorMasterDisplay.setGatewayDeviceId(patientMonitorMaster.getId());
+		patientMonitorMasterDisplay.setLatency(1.0);
+		actuators.add(patientMonitorMasterDisplay);
+
+		// Instantiate patient monitor devices with initial sensor values from arrays
+		for (int i = 0; i < numOfpatientsPerWing; i++) {
+			String patientMonitorUnitId = "PatientMonitor-" + (i + 1) + ":" + id;
+			FogDevice patientMonitor = addPatientMonitor(patientMonitorUnitId, userId, appId,
+					patientMonitorMaster.getId(), actuators, sensors, heartRateSensorInitialValues[i],
+					bloodPressureSensorInitialValues[i], o2SaturationSensorInitialValues[i],
+					respiratoryrateSensorInitialValues[i]);
+			patientMonitor.setUplinkLatency(2); // latency of connection between patient monitor and patient monitor
+												// master is 2 ms
 			fogDevices.add(patientMonitor);
 		}
-//		//Create an actuator for viewing all patient monitor units
-//		Actuator patientMonitorDisplay = new Actuator(id+"-patientMasterdisplay", userId, appId, "PATIENTMONITORMASTERDISPLAY"); 
-//		patientMonitorDisplay.setGatewayDeviceId(patientMonitorMaster.getId());
-//		patientMonitorDisplay.setLatency(1.0); 
-//		actuators.add(patientMonitorDisplay);
 		return router;
 	}
-	
-	private static FogDevice addPatientMonitor(String id, int userId, String appId, int parentId, List<Actuator>actuators, List<Sensor> sensors, int heartRateSensorInitialValue, int bloodPressureSensorInitialValue)	{
-		// Patient monitors will be raspberry Pi components at level 5
-		FogDevice patientMonitor = createFogDevice(id,"Pi3BPlus",5);
+
+	private static FogDevice addPatientMonitor(String id, int userId, String appId, int parentId,
+			List<Actuator> actuators, List<Sensor> sensors, int heartRateSensorInitialValue,
+			int bloodPressureSensorInitialValue, int o2SaturationSensorInitialValue,
+			int respiratoryrateSensorInitialValue) {
+		// Patient monitors will be raspberry Pi components at level 4
+		FogDevice patientMonitor = createFogDevice(id, "Pi3BPlus", 4);
 		patientMonitor.setParentId(parentId);
-		
-		addPatientMonitorSensors(id, userId, appId, patientMonitor.getId(), sensors, heartRateSensorInitialValue, bloodPressureSensorInitialValue);
-		
-		// Patient monitors will have a display to output their sensor data
-		Actuator patientMonitorDisplay = new Actuator(id+"-display", userId, appId, "PATIENTMONITORDISPLAY");
-		patientMonitorDisplay.setGatewayDeviceId(patientMonitor.getId());
-		patientMonitorDisplay.setLatency(1.0); 
-		actuators.add(patientMonitorDisplay);	
+		addPatientMonitorSensors(id, userId, appId, patientMonitor.getId(), sensors, heartRateSensorInitialValue,
+				bloodPressureSensorInitialValue, o2SaturationSensorInitialValue, respiratoryrateSensorInitialValue);
 		return patientMonitor;
 	}
-	
-	//Method to add sensors. 
-	private static void addPatientMonitorSensors(String id, int userId, String appId, int parentId, List<Sensor> sensors, int heartRateSensorInitialValue, int bloodPressureSensorInitialValue) {
+
+	// Patient Monitor Sensors with their initial values set using array index
+	// values retrieved by addHospitalWing invoking function
+	private static void addPatientMonitorSensors(String id, int userId, String appId, int parentId,
+			List<Sensor> sensors, int heartRateSensorInitialValue, int bloodPressureSensorInitialValue,
+			int o2SaturationSensorInitialValue, int respiratoryrateSensorInitialValue) {
 		int monitorSensorTransmissionTime = 1;
-		//Patient Monitor Sensors with their initial values set using array index values retrieved by addHospitalWing invoking function
-		Sensor heartRateSensor = new Sensor(id+"-hrSensor", "heartRate", userId, appId, new DeterministicDistribution(monitorSensorTransmissionTime), heartRateSensorInitialValue);
-		heartRateSensor.setGatewayDeviceId(parentId);
-		heartRateSensor.setLatency(1.0);
-		sensors.add(heartRateSensor);
-		
-		
-		Sensor bloodPressureSensor = new Sensor(id+"-bpSensor", "bloodPressure", userId, appId, new DeterministicDistribution(monitorSensorTransmissionTime), bloodPressureSensorInitialValue);
-		bloodPressureSensor.setGatewayDeviceId(parentId);
-		bloodPressureSensor.setLatency(1.0);
-		bloodPressureSensorInitialValue+=20;
-		sensors.add(bloodPressureSensor);
-		
-//		Sensor o2SaturationSensor = new Sensor(id+"-o2Sensor", "o2Saturation", userId, appId, new DeterministicDistribution(monitorSensorTransmissionTime), oxygenSaturationSensorInitialValue);
-//		o2SaturationSensor.setGatewayDeviceId(parentId);
-//		o2SaturationSensor.setLatency(1.0);
-//		sensors.add(o2SaturationSensor);
-		
-//		Sensor respiratoryRateSensor = new Sensor(id+"-rrSensor", "respiratoryRate", userId, appId, new DeterministicDistribution(monitorSensorTransmissionTime), respiratoryRateSensorInitialValue);
-//		respiratoryRateSensor.setGatewayDeviceId(parentId);
-//		respiratoryRateSensor.setLatency(1.0);
-//		sensors.add(respiratoryRateSensor);
-//				
+
+		// Create heart rate sensor
+		try {
+
+			Sensor heartRateSensor = new Sensor(id + "-hrSensor", "heartRate", userId, appId,
+					new DeterministicDistribution(monitorSensorTransmissionTime), heartRateSensorInitialValue);
+			heartRateSensor.setGatewayDeviceId(parentId);
+			heartRateSensor.setLatency(1.0);
+			sensors.add(heartRateSensor);
+		} catch (Exception e) {
+			System.out.println("Issue creating heart rate sensor");
+		}
+
+		// Create blood pressure sensor
+		try {
+			Sensor bloodPressureSensor = new Sensor(id + "-bpSensor", "bloodPressure", userId, appId,
+					new DeterministicDistribution(monitorSensorTransmissionTime), bloodPressureSensorInitialValue);
+			bloodPressureSensor.setGatewayDeviceId(parentId);
+			bloodPressureSensor.setLatency(1.0);
+			sensors.add(bloodPressureSensor);
+		} catch (Exception e) {
+			e.printStackTrace();
+			System.out.println("Issue creating blood pressure sensor");
+		}
+
+		// Create o2Saturation sensor
+		try {
+			Sensor o2SaturationSensor = new Sensor(id + "-o2Sensor", "o2Saturation", userId, appId,
+					new DeterministicDistribution(monitorSensorTransmissionTime), o2SaturationSensorInitialValue);
+			o2SaturationSensor.setGatewayDeviceId(parentId);
+			o2SaturationSensor.setLatency(1.0);
+			sensors.add(o2SaturationSensor);
+		} catch (Exception e) {
+			e.printStackTrace();
+			System.out.println("Issue creating o2Saturation sensor");
+		}
+
+		// Create respiratoryRate sensor
+		try {
+			Sensor respiratoryRateSensor = new Sensor(id + "-rrSensor", "respiratoryRate", userId, appId,
+					new DeterministicDistribution(monitorSensorTransmissionTime), respiratoryrateSensorInitialValue);
+			respiratoryRateSensor.setGatewayDeviceId(parentId);
+			respiratoryRateSensor.setLatency(1.0);
+			sensors.add(respiratoryRateSensor);
+		} catch (Exception e) {
+			e.printStackTrace();
+			System.out.println("Issue creating respiratoryRate sensor");
+		}
 	}
 }

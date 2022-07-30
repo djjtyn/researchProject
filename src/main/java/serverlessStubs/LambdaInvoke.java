@@ -18,6 +18,8 @@ import com.google.gson.Gson;
 
 public class LambdaInvoke {
 	
+	//Variable to track overall Lambda latency
+	
 	public static void transmitTupleData(String sensorIdentifier, String sensorType, int sensorValue, String snsTopicName) {
 		try {
 			//Create and retrieve a hashmap containing sensor info

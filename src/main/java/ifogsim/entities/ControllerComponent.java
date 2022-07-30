@@ -1,13 +1,13 @@
 package ifogsim.entities;
 
-import ifogsim.application.Application;
-import ifogsim.placement.MicroservicePlacementLogic;
-import ifogsim.placement.PlacementLogicOutput;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import ifogsim.application.Application;
+import ifogsim.placement.MicroservicePlacementLogic;
+import ifogsim.placement.PlacementLogicOutput;
 
 /**
  * Created by Samodha Pallewatta on 8/29/2019.
@@ -170,12 +170,3 @@ class ServiceDiscovery {
         }
     }
 }
-
-
-
-
-
-
-
-
-
