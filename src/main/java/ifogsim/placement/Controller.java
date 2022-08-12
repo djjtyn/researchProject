@@ -8,6 +8,7 @@ import java.util.Map;
 import cloudsim.core.CloudSim;
 import cloudsim.core.SimEntity;
 import cloudsim.core.SimEvent;
+import fecsimulator.HospitalSimulation;
 import ifogsim.application.AppEdge;
 import ifogsim.application.AppLoop;
 import ifogsim.application.AppModule;
@@ -19,6 +20,7 @@ import ifogsim.utils.Config;
 import ifogsim.utils.FogEvents;
 import ifogsim.utils.FogUtils;
 import ifogsim.utils.TimeKeeper;
+import serverlessStubs.Cloudwatch;
 
 public class Controller extends SimEntity{
 	
@@ -97,6 +99,7 @@ public class Controller extends SimEntity{
 			manageResources();
 			break;
 		case FogEvents.STOP_SIMULATION:
+			System.out.println("Stopping sim");
 			CloudSim.stopSimulation();
 			printTimeDetails();
 			//printPowerDetails();
@@ -136,15 +139,33 @@ public class Controller extends SimEntity{
 		}
 		return null;
 	}
+	
+	private double getExecutionTime() {
+		double executionTime = Calendar.getInstance().getTimeInMillis() - TimeKeeper.getInstance().getSimulationStartTime();
+		System.out.println("Local Environment Execution Time: " + executionTime);
+		//Check if the serverless environment is being used
+		if(HospitalSimulation.useServerless) {
+			double serverlessExecutionTime = Cloudwatch.getDuration(HospitalSimulation.startTimeDate);
+			System.out.println("Serverless ENvironment Execution Tme: " + serverlessExecutionTime);
+			executionTime+=serverlessExecutionTime;
+		}
+		//Set the static loopexecutionTime variable in HospitalSImulation class with the identified execution time
+		//HospitalSimulation.loopexecutionTime = executionTime;
+		System.out.println("Total Execution Time: " + executionTime);
+		return executionTime;
+		
+	}
+	
 	private void printTimeDetails() {
 		System.out.println("=========================================");
 		System.out.println("============== RESULTS ==================");
 		System.out.println("=========================================");
-		System.out.println("EXECUTION TIME : "+ (Calendar.getInstance().getTimeInMillis() - TimeKeeper.getInstance().getSimulationStartTime()));
+		System.out.println("EXECUTION TIME : "+ getExecutionTime());
 		System.out.println("=========================================");
-		System.out.println("APPLICATION LOOP DELAYS");
+		System.out.println("APPLICATION LOOP DELAYS ");
 		System.out.println("=========================================");
 		for(Integer loopId : TimeKeeper.getInstance().getLoopIdToTupleIds().keySet()){
+			System.out.println(loopId);
 			/*double average = 0, count = 0;
 			for(int tupleId : TimeKeeper.getInstance().getLoopIdToTupleIds().get(loopId)){
 				Double startTime = 	TimeKeeper.getInstance().getEmitTimes().get(tupleId);
@@ -155,7 +176,7 @@ public class Controller extends SimEntity{
 				count += 1;
 			}
 			System.out.println(getStringForLoopId(loopId) + " ---> "+(average/count));*/
-			System.out.println(getStringForLoopId(loopId) + " ---> "+TimeKeeper.getInstance().getLoopIdToCurrentAverage().get(loopId));
+			System.out.println(getStringForLoopId(loopId) + "---> "+TimeKeeper.getInstance().getLoopIdToCurrentAverage().get(loopId));
 		}
 		System.out.println("=========================================");
 		System.out.println("TUPLE CPU EXECUTION DELAY");
@@ -214,7 +235,7 @@ public class Controller extends SimEntity{
 	}
 	
 	private void processAppSubmit(Application application){
-		System.out.println(CloudSim.clock()+" Submitted application "+ application.getAppId());
+		System.out.println(CloudSim.clock()+" Submitted application "+ application.getAppId() + ". Please wait for simulation results...");
 		FogUtils.appIdToGeoCoverageMap.put(application.getAppId(), application.getGeoCoverage());
 		getApplications().put(application.getAppId(), application);
 		

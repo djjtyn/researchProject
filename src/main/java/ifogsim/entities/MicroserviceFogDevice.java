@@ -235,7 +235,6 @@ public class MicroserviceFogDevice extends FogDevice {
             tuple.addToTraversedMicroservices(getId(), tuple.getDestModuleName());
 
             updateTimingsOnReceipt(tuple);
-
             executeTuple(ev, tuple.getDestModuleName());
         } else {
             if (tuple.getDestinationDeviceId() != -1) {
@@ -268,7 +267,6 @@ public class MicroserviceFogDevice extends FogDevice {
                             //Logger.error(getName(), "Executing tuple for operator " + moduleName);
 
                             updateTimingsOnReceipt(tuple);
-
                             executeTuple(ev, tuple.getDestModuleName());
 
                             return;

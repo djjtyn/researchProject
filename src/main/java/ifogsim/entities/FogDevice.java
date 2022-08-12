@@ -11,6 +11,7 @@ import cloudsim.power.models.PowerModel;
 import cloudsim.provisioners.RamProvisionerSimple;
 import cloudsim.sdn.overbooking.BwProvisionerOverbooking;
 import cloudsim.sdn.overbooking.PeProvisionerOverbooking;
+import fecsimulator.HospitalSimulation;
 import ifogsim.application.AppEdge;
 import ifogsim.application.AppLoop;
 import ifogsim.application.AppModule;
@@ -560,10 +561,10 @@ public class FogDevice extends PowerDatacenter {
         }
     }
 
-    int numClients = 0;
     
     protected void processTupleArrival(SimEvent ev) {
         Tuple tuple = (Tuple) ev.getData();
+        //System.out.println(this.getName() + " has received " + tuple.getTupleType() + " with a value of " + tuple.getTupleValue() + " to its " + tuple.getSrcModuleName() + " module");
         
         if (getName().equals("cloud")) {
             updateCloudTraffic();
@@ -666,25 +667,22 @@ public class FogDevice extends PowerDatacenter {
         send(ev.getSource(), CloudSim.getMinTimeBetweenEvents(), FogEvents.TUPLE_ACK);
     }
 
-    //This method will determine if serverless functions are to be used if the orchestratorModule located on PatientMonitorOrchestrator device is used
+
     protected void executeTuple(SimEvent ev, String moduleName) {
         Tuple tuple = (Tuple) ev.getData();
         AppModule module = getModuleByName(moduleName);
-        System.out.println(moduleName + " received " + tuple.getTupleType());
-        
-//        //Check if the execution is being done using the orchestratorModule of the PatientMonitor device 
-//        if(moduleName.equals("orchestratorModule") && this.getName().startsWith("PatientMonitor")) {
-//        	//Determine the priority level of the request
-//        	String priorityLevel = determinePriority(tuple.getTupleValue(), tuple.getTupleType());
-//        	System.out.println(tuple.getTupleType() + " identified as Priority: " + priorityLevel);
-//        	//If the priority of the request is anything other than p1 use serverless functions
-//        	if(!priorityLevel.equals("p1")) {
-//        		//Invoke a Lambda function passing in the sensors and SNS topic information 
-//        		//LambdaInvoke.transmitTupleData(tuple.getSensorSourceName(), tuple.getTupleType(), tuple.getTupleValue(), module.getSNSTopicName());
-//        		System.out.println("Invoked Lambda function");
-//        		return;
-//        	}
-//        }
+        //System.out.println(this.getName() + ": " + moduleName + " executing " + tuple.getTupleType() + " with value of " + tuple.getTupleValue());
+        //Check if the execution is being done using the orchestratorModule and the user has selected they want to use the serverless environment
+        if(moduleName.equals("orchestratorModule") && HospitalSimulation.getUseServerless() == true) {
+        	//Determine the priority level of the request
+        	String priorityLevel = determinePriority(tuple.getTupleValue(), tuple.getTupleType());
+        	//If the priority of the request is anything other than p1 use serverless functions
+        	if(!priorityLevel.equals("p1")) {
+        		//Invoke a Lambda Function contained in LambdaInvoke class and return from event flow
+        		//LambdaInvoke.transmitTupleData(tuple.getSensorSourceName(), tuple.getTupleType(), tuple.getTupleValue(), module.getSNSTopicName());
+        		return;   		
+        	}
+        }
         if (tuple.getDirection() == Tuple.UP) {
             String srcModule = tuple.getSrcModuleName();
             if (!module.getDownInstanceIdsMaps().containsKey(srcModule))
@@ -1102,20 +1100,19 @@ public class FogDevice extends PowerDatacenter {
   
   //This method determines what priority level to assign for sensor data. 5 levels with p1 being highest priority and p5 being least priority
   public String determinePriority(int sensorValue, String tupleType) {
-//	  System.out.println("Type: " + tupleType + " has value of " + sensorValue);
 	  // Ensure the sensor value is valid
 	  if(sensorValue < 0) {
 		  return "p1";
 	  } else {
-		  String priority = null;
+		  String priority = "p1";
 		  // Determine sensor priority
-		  if(tupleType.equals("heartRateData")) {
+		  if(tupleType.equals("heartRateModuleOut")) {
 			  priority = determineHeartRatePriority(sensorValue);   	  
-		  } else if (tupleType.equals("bloodPressureData")) {
+		  } else if (tupleType.equals("bloodPressureModuleOu")) {
 			  priority = determineBloodPressurePriority(sensorValue);
-		  } else if (tupleType.equals("o2SaturationData")) {
+		  } else if (tupleType.equals("o2SaturationModuleOut")) {
 			  priority = determineOxygenSaturationPriority(sensorValue);
-		  } else if (tupleType.equals("respiratoryRateData")) {
+		  } else if (tupleType.equals("respiratoryRateModuleOut")) {
 			  priority = determineRespRatePriority(sensorValue);
 		  }
 		  return priority;
@@ -1127,41 +1124,39 @@ public class FogDevice extends PowerDatacenter {
   public String determineHeartRatePriority(int sensorValue) {
 	  if(sensorValue < 50 || sensorValue > 110) {
 		  return "p1";
-	  } else if(sensorValue < 55 || sensorValue > 105 ) {
-		  return "p2";
-	  } else if(sensorValue < 60 || sensorValue > 100 ) {
-		  return "p3";
-	  } else if(sensorValue < 65 || sensorValue > 95 ) {
-		  return "p4";
-	  } else {
-		  return "p5";
-	  }  
+	  }
+	  return "p5";  
   }
   
   //Set priority thresholds for blood pressure sensors
   public String determineBloodPressurePriority(int sensorValue) {
 	  if (sensorValue >120 || sensorValue <80) {
 		  return "p1";
-	  } else {
-		  return "p5";
-	  }
+	  } 
+	  return "p2";
   }
   
   //Set priority thresholds for blood pressure sensors
   public String determineOxygenSaturationPriority(int sensorValue) {
-//	  System.out.println("Oxygen Sat level is " + sensorValue);
 	  if (sensorValue < 95) {
 		  return "p1";
-	  } else {
-		  return "p5";
-	  }
+	  } 
+	  return "p2";
   }
   
   public String determineRespRatePriority(int sensorValue) {
 	  if (sensorValue < 12 || sensorValue >16) {
 		  return "p1";
-	  } else {
-		  return "p5";
 	  }
+	  return "p2";
   }
+  
+	public static HashMap<String, Object> createMapping(String sensorIdentifier , String sensorType, int sensorValue, String snsTopicName) {
+		HashMap<String, Object> mapping = new HashMap<>();
+		mapping.put("SensorIdentifier", sensorIdentifier);
+		mapping.put("SensorType", sensorType);
+		mapping.put("SensorValue", sensorValue);
+		mapping.put("snsTopicName", snsTopicName);
+		return mapping;
+	}
 }

@@ -105,6 +105,7 @@ public class Sensor extends SimEntity{
 			
 			//Allow Lambda functions to retrieve sensor identifiers 
 			tuple.setTupleType(getTupleType());
+			//System.out.println("Setting sensor source name: " + this.getName());
 			tuple.setSensorSourceName(this.getName());
 			//Allow each sensor to transmit a value
 			int sensorValue = generateRandomSensorData();
@@ -114,7 +115,8 @@ public class Sensor extends SimEntity{
 	
 			tuple.setDestinationDeviceId(getGatewayDeviceId());
 			int actualTupleId = updateTimings(getSensorName(), tuple.getDestModuleName());
-			tuple.setActualTupleId(actualTupleId);			
+			tuple.setActualTupleId(actualTupleId);	
+			//System.out.println(this.sensorName + " transmitting value: " + tuple.getTupleValue()  + " to " + tuple.getDestModuleName());
 			send(gatewayDeviceId, getLatency(), FogEvents.TUPLE_ARRIVAL,tuple);
 		} catch (Exception e) {
 			System.out.println("Issue transmitting sensor data");

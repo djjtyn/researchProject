@@ -12,7 +12,12 @@ public class ModuleMapping {
 	protected Map<String, List<String>> moduleMapping;
 	
 	public static ModuleMapping createModuleMapping(){
-		return new ModuleMapping();
+		try {
+			return new ModuleMapping();
+		} catch(Exception e) {
+			System.out.println("Error creating new module mapping");
+			return null;
+		}
 	}
 
 	public Map<String, List<String>> getModuleMapping() {
@@ -34,10 +39,17 @@ public class ModuleMapping {
 	 * @param instanceCount
 	 */
 	public void addModuleToDevice(String moduleName, String deviceName){
-		if(!getModuleMapping().containsKey(deviceName))
-			getModuleMapping().put(deviceName, new ArrayList<String>());
-		if(!getModuleMapping().get(deviceName).contains(moduleName))
-			getModuleMapping().get(deviceName).add(moduleName);
+		//System.out.println("Trying to add " + moduleName + " to device: " + deviceName);
+		try {
+			if(!getModuleMapping().containsKey(deviceName))
+				getModuleMapping().put(deviceName, new ArrayList<String>());
+			if(!getModuleMapping().get(deviceName).contains(moduleName))
+				getModuleMapping().get(deviceName).add(moduleName);
+			//System.out.println("Added " + moduleName + " to " + deviceName);
+		} catch (Exception e) {
+			//System.out.println("Error adding " + moduleName + " to " + deviceName);
+			e.printStackTrace();
+		}
 	}
 	
 }

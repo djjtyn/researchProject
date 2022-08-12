@@ -63,6 +63,7 @@ public class ModulePlacementEdgewards extends ModulePlacement{
 	protected void mapModules() {
 		try {
 			for(String deviceName : getModuleMapping().getModuleMapping().keySet()){
+				//System.out.println("Keyset: " + deviceName);
 				for(String moduleName : getModuleMapping().getModuleMapping().get(deviceName)){
 					int deviceId = CloudSim.getEntityId(deviceName);
 					getCurrentModuleMap().get(deviceId).add(moduleName);
@@ -77,10 +78,13 @@ public class ModulePlacementEdgewards extends ModulePlacement{
 		
 		List<List<Integer>> leafToRootPaths = getLeafToRootPaths();
 		for(List<Integer> path : leafToRootPaths){
+			try {
 			//System.out.println("Path: " + path); 
-			placeModulesInPath(path);
-
-			
+				placeModulesInPath(path);	
+			}catch(Exception e) {
+				System.out.println("Error placing modules in path");
+				e.printStackTrace();
+			}
 		}
 		try {
 			for(int deviceId : getCurrentModuleMap().keySet()){
@@ -93,7 +97,7 @@ public class ModulePlacementEdgewards extends ModulePlacement{
 				}
 			}
 		} catch(Exception e) {
-			System.out.println("Problem Here at mapModules");
+			System.out.println("Error at mapModules");
 			e.printStackTrace();
 		}
 	}
@@ -134,6 +138,7 @@ public class ModulePlacementEdgewards extends ModulePlacement{
 	
 	protected double getRateOfSensor(String sensorType){
 		for(Sensor sensor : getSensors()){
+			//System.out.println("Sensor Rate: " + sensor.getTupleType() + " \\ Sensor type: " + sensorType);
 			if(sensor.getTupleType().equals(sensorType))
 				return 1/sensor.getTransmitDistribution().getMeanInterTransmitTime();
 		}
@@ -150,6 +155,7 @@ public class ModulePlacementEdgewards extends ModulePlacement{
 		 */
 		for(AppEdge edge : getApplication().getEdges()){
 			if(edge.isPeriodic()){
+				System.out.println("Edge is periodic");
 				appEdgeToRate.put(edge, 1/edge.getPeriodicity());
 			}
 		}
@@ -214,11 +220,19 @@ public class ModulePlacementEdgewards extends ModulePlacement{
 						modulesToPlace = getModulesToPlace(placedModules);
 						
 						// NOW THE MODULE TO PLACE IS IN THE CURRENT DEVICE. CHECK IF THE NODE CAN SUSTAIN THE MODULE
-						for(AppEdge edge : getApplication().getEdges()){		// take all incoming edges
-							if(edge.getDestination().equals(moduleName)){
-								double rate = appEdgeToRate.get(edge);
-								totalCpuLoad += rate*edge.getTupleCpuLength();
+						try {
+							for(AppEdge edge : getApplication().getEdges()){		// take all incoming edges
+								if(edge.getDestination().equals(moduleName)){
+									if(appEdgeToRate.get(edge) == null) {
+										System.out.println("NULL FOUND AT: " + edge.toString());
+									}
+									double rate = appEdgeToRate.get(edge);
+									totalCpuLoad += rate*edge.getTupleCpuLength();
+								}
 							}
+						} catch(Exception e) {
+							System.out.println("Error placing modules in path");
+							e.printStackTrace();
 						}
 						if(totalCpuLoad + getCurrentCpuLoad().get(deviceId) > device.getHost().getTotalMips()){
 							Logger.debug("ModulePlacementEdgeward", "Need to shift module "+moduleName+" upstream from device " + device.getName());

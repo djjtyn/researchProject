@@ -18,17 +18,34 @@ import com.google.gson.Gson;
 
 public class LambdaInvoke {
 	
-	//Variable to track overall Lambda latency
+	//Variable to allow Lambda client to only require one instantitation
+	private static AWSLambda client;
+
+	
+	//Setter & Getter for client
+	public static void setClient(AWSLambda clientSetter) {
+		client = clientSetter;
+	}
+	
+	public static AWSLambda getClient() {
+		//If the client has already been set, retrieve it
+		if (client != null) {
+			return client;
+		} else {
+			//If the client hasn't yet been set, instantiate and set
+			AWSLambda client = createLambdaClient();
+			setClient(client);
+			return client;
+		}
+		
+	}
 	
 	public static void transmitTupleData(String sensorIdentifier, String sensorType, int sensorValue, String snsTopicName) {
 		try {
+			//Instantiate a Lambda client by either setting or getting the global scoped client
+			AWSLambda client = getClient();
 			//Create and retrieve a hashmap containing sensor info
 			HashMap<String, Object> sensorInfo = createMapping(sensorIdentifier, sensorType, sensorValue, snsTopicName);
-			// Credentials required to connect to AWS account
-		    AWSCredentials credentials = new BasicSessionCredentials(System.getenv("AWS_ACCESS_KEY_ID"), System.getenv("AWS_SECRET_ACCESS_KEY"), System.getenv("SESSION_TOKEN"));
-			//	Instantiate a client allowing access to AWS Lambda
-			AWSLambda client = createLambdaClient(credentials);
-			//Pass in credentials so SNS client can use same credentials as Lambda client
 			InvokeRequest request = createLambdaRequest(sensorInfo);	
 			client.invoke(request);
 		} catch(Exception e) {
@@ -38,12 +55,18 @@ public class LambdaInvoke {
 	}
 	
 	//Method to instantiate a client for communicating with AWS Lambda
-	private static AWSLambda createLambdaClient(AWSCredentials credentials) {
-		AWSLambda client = AWSLambdaClientBuilder.standard()
-				.withRegion(Regions.EU_WEST_1)
-				.withCredentials(new AWSStaticCredentialsProvider(credentials))
-				.build();
-		return client;
+	private static AWSLambda createLambdaClient() {
+		try {
+			AWSCredentials credentials = new BasicSessionCredentials(EnvVariables.getAWSAccessKey(), EnvVariables.getAWSSecretKey(), EnvVariables.getAWSSessionToken());
+			AWSLambda client = AWSLambdaClientBuilder.standard()
+					.withRegion(Regions.EU_WEST_1)
+					.withCredentials(new AWSStaticCredentialsProvider(credentials))
+					.build();
+			return client;
+		}catch(Exception e) {
+			System.out.println("Error creating Lambda Client");
+			return null;
+		}
 	}
 	
 	//Mehod to instantiate a payload to send to a AWS Lambda function

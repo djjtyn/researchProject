@@ -14,22 +14,22 @@ Resources:
       MemorySize: 512
       Handler: transmission.TransmitTuple::transmitTupleData
       CodeUri: target/lambda.zip
-      Role: arn:aws:iam::250738637992:role/Lambda-Execution-Role
-      #ProvisionedConcurrencyConfig:
-        #ProvisionedConcurrentExecutions: 1 
+      Role: arn:aws:iam::250738637992:role/service-role/20153104TransmitTupleRole
+      ProvisionedConcurrencyConfig:
+        ProvisionedConcurrentExecutions: 1 
       Layers:
         - !Sub "arn:aws:lambda:${AWS::Region}:580247275435:layer:LambdaInsightsExtension:18"
       Policies:
         - CloudWatchLambdaInsightsExecutionRolePolicy
  
-  # Autoscaler for Lambda function       
+  #Autoscaler for Lambda function       
   LambdaScalableTarget:
     Type: AWS::ApplicationAutoScaling::ScalableTarget
     Properties:
       MinCapacity: 1
       MaxCapacity: 100
       ResourceId: !Sub function:${TransmitTupleLambda}:live
-      RoleARN: arn:aws:iam::250738637992:role/aws-service-role/autoscaling.amazonaws.com/AWSServiceRoleForAutoScaling
+      RoleARN: arn:aws:iam::250738637992:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_x20153104-Project_e1b9b118f911a7ce
       ScalableDimension: lambda:function:ProvisionedConcurrency
       ServiceNamespace: lambda
     DependsOn: TransmitTupleLambdaAliaslive 

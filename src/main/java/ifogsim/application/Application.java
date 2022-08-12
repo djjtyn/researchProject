@@ -62,14 +62,18 @@ public class Application {
 	 * @param ram
 	 */
 	public void addAppModule(String moduleName, int ram){
-		int mips = 1000;
-		long size = 10000;
-		long bw = 1000;
-		String vmm = "Xen";
-		
-		AppModule module = new AppModule(FogUtils.generateEntityId(), moduleName, appId, userId, 
-				mips, ram, bw, size, vmm, new TupleScheduler(mips, 1), new HashMap<Pair<String, String>, SelectivityModel>());
-		getModules().add(module);	
+		try {
+			int mips = 1000;
+			long size = 10000;
+			long bw = 1000;
+			String vmm = "Xen";
+			
+			AppModule module = new AppModule(FogUtils.generateEntityId(), moduleName, appId, userId, 
+					mips, ram, bw, size, vmm, new TupleScheduler(mips, 1), new HashMap<Pair<String, String>, SelectivityModel>());
+			getModules().add(module);				
+		}catch(Exception e) {
+			System.out.println("Error adding " + moduleName + "module to application");
+		}
 	}
 	
 	//This constructor allows a snsTopicName to be passed to allow orchestrator module to publish to the topic
@@ -102,9 +106,14 @@ public class Application {
 	
 	//Method for adding add edges for sensors, modules and actuators
 	public void addAppEdge(String source, String destination, double tupleCpuLength, double tupleNwLength, String tupleType, int direction, int edgeType){
-		AppEdge edge = new AppEdge(source, destination, tupleCpuLength, tupleNwLength, tupleType, direction, edgeType);
-		getEdges().add(edge);
-		getEdgeMap().put(edge.getTupleType(), edge);
+		try {
+			AppEdge edge = new AppEdge(source, destination, tupleCpuLength, tupleNwLength, tupleType, direction, edgeType);
+			getEdges().add(edge);
+			getEdgeMap().put(edge.getTupleType(), edge);
+		}catch (Exception e) {
+			System.out.println("Error adding app edge: " + source + " --> " + destination);
+			e.printStackTrace();
+		}
 	}
 	
 	/**
@@ -132,8 +141,13 @@ public class Application {
 	 * @param selectivityModel Selectivity model governing the relation between the incoming and outgoing edge
 	 */
 	public void addTupleMapping(String moduleName, String inputTupleType, String outputTupleType, SelectivityModel selectivityModel){
-		AppModule module = getModuleByName(moduleName);
-		module.getSelectivityMap().put(new Pair<String, String>(inputTupleType, outputTupleType), selectivityModel);
+		try {
+			AppModule module = getModuleByName(moduleName);
+			module.getSelectivityMap().put(new Pair<String, String>(inputTupleType, outputTupleType), selectivityModel);
+		} catch (Exception e) {
+			System.out.println("Error adding tuple mapping: " + moduleName + "(" + inputTupleType + ") RETURNS " + outputTupleType);
+			e.printStackTrace();
+		}
 	}
 	
 	/**
@@ -200,17 +214,43 @@ public class Application {
 	 */
 	public List<Tuple> getResultantTuples(String moduleName, Tuple inputTuple, int sourceDeviceId, int sourceModuleId){
 		List<Tuple> tuples = new ArrayList<Tuple>();
-		AppModule module = getModuleByName(moduleName);
-		for(AppEdge edge : getEdges()){
-			if(edge.getSource().equals(moduleName)){
-				Pair<String, String> pair = new Pair<String, String>(inputTuple.getTupleType(), edge.getTupleType());
-				if(module.getSelectivityMap().get(pair)==null)
-					continue;
-				SelectivityModel selectivityModel = module.getSelectivityMap().get(pair);
-				if(selectivityModel.canSelect()){
-					//TODO check if the edge is ACTUATOR, then create multiple tuples
-					if(edge.getEdgeType() == AppEdge.ACTUATOR){
-						//for(Integer actuatorId : module.getActuatorSubscriptions().get(edge.getTupleType())){
+		try {
+			AppModule module = getModuleByName(moduleName);
+			for(AppEdge edge : getEdges()){
+				if(edge.getSource().equals(moduleName)){
+					Pair<String, String> pair = new Pair<String, String>(inputTuple.getTupleType(), edge.getTupleType());
+					if(module.getSelectivityMap().get(pair)==null)
+						continue;
+					SelectivityModel selectivityModel = module.getSelectivityMap().get(pair);
+					if(selectivityModel.canSelect()){
+						//TODO check if the edge is ACTUATOR, then create multiple tuples
+						if(edge.getEdgeType() == AppEdge.ACTUATOR){
+							//for(Integer actuatorId : module.getActuatorSubscriptions().get(edge.getTupleType())){
+								Tuple tuple = new Tuple(appId, FogUtils.generateTupleId(), edge.getDirection(),  
+										(long) (edge.getTupleCpuLength()),
+										inputTuple.getNumberOfPes(),
+										(long) (edge.getTupleNwLength()),
+										inputTuple.getCloudletOutputSize(),
+										inputTuple.getUtilizationModelCpu(),
+										inputTuple.getUtilizationModelRam(),
+										inputTuple.getUtilizationModelBw()
+										);
+								tuple.setActualTupleId(inputTuple.getActualTupleId());
+								tuple.setUserId(inputTuple.getUserId());
+								tuple.setAppId(inputTuple.getAppId());
+								tuple.setDestModuleName(edge.getDestination());
+								tuple.setSrcModuleName(edge.getSource());
+								tuple.setDirection(Tuple.ACTUATOR);
+								tuple.setTupleType(edge.getTupleType());
+								tuple.setSourceDeviceId(sourceDeviceId);
+								tuple.setSourceModuleId(sourceModuleId);
+								tuple.setSensorSourceName(inputTuple.getSensorSourceName());
+								tuple.setTupleValue(inputTuple.getTupleValue());
+								//System.out.println(module.getName() + " outputting " + tuple.getTupleValue() + " of type " + tuple.getTupleType());
+								//tuple.setActuatorId(actuatorId);							
+								tuples.add(tuple);
+							//}
+						}else{
 							Tuple tuple = new Tuple(appId, FogUtils.generateTupleId(), edge.getDirection(),  
 									(long) (edge.getTupleCpuLength()),
 									inputTuple.getNumberOfPes(),
@@ -225,49 +265,21 @@ public class Application {
 							tuple.setAppId(inputTuple.getAppId());
 							tuple.setDestModuleName(edge.getDestination());
 							tuple.setSrcModuleName(edge.getSource());
-							tuple.setDirection(Tuple.ACTUATOR);
+							tuple.setDirection(edge.getDirection());
 							tuple.setTupleType(edge.getTupleType());
-							tuple.setSourceDeviceId(sourceDeviceId);
 							tuple.setSourceModuleId(sourceModuleId);
+							tuple.setTraversedMicroservices(inputTuple.getTraversed());
 							tuple.setSensorSourceName(inputTuple.getSensorSourceName());
-							//tuple.setActuatorId(actuatorId);
-							
+							tuple.setTupleValue(inputTuple.getTupleValue());
 							tuples.add(tuple);
-						//}
-					}else{
-						Tuple tuple = new Tuple(appId, FogUtils.generateTupleId(), edge.getDirection(),  
-								(long) (edge.getTupleCpuLength()),
-								inputTuple.getNumberOfPes(),
-								(long) (edge.getTupleNwLength()),
-								inputTuple.getCloudletOutputSize(),
-								inputTuple.getUtilizationModelCpu(),
-								inputTuple.getUtilizationModelRam(),
-								inputTuple.getUtilizationModelBw()
-								);
-						tuple.setActualTupleId(inputTuple.getActualTupleId());
-						tuple.setUserId(inputTuple.getUserId());
-						tuple.setAppId(inputTuple.getAppId());
-						tuple.setDestModuleName(edge.getDestination());
-						tuple.setSrcModuleName(edge.getSource());
-						tuple.setDirection(edge.getDirection());
-						tuple.setTupleType(edge.getTupleType());
-						tuple.setSourceModuleId(sourceModuleId);
-						tuple.setTraversedMicroservices(inputTuple.getTraversed());
-						tuple.setSensorSourceName(inputTuple.getSensorSourceName());
-						//if the module processing the tuple is either heart rate, blood pressure, respiratory rate or 
-						if(moduleName.equals("heartRateModule") || moduleName.equals("bloodPressureModule") || moduleName.equals("o2SaturationModule") || moduleName.equals("orchestratorModule")
-								|| moduleName.equals("patientMonitorMasterModule")) {
-							System.out.println("Module Name: " + moduleName);
-							tuple.setTupleValue(inputTuple.getTupleValue());									
+							//System.out.println(module.getName() + " outputting " + tuple.getTupleType() + " with value of " + tuple.getTupleValue());
 						}
-//						if(moduleName.equals("orchestratorModule")) {
-//							System.out.println("Testing here");
-//						}
-						tuples.add(tuple);
-
 					}
 				}
 			}
+		} catch(Exception e) {
+			System.out.println("Error getting resultant tuples from " + moduleName + "module");
+			e.printStackTrace();
 		}
 		return tuples;
 	}
