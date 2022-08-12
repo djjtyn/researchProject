@@ -330,41 +330,6 @@ public class HospitalSimulation {
 				o2SaturationSensorInitialValues = new int[] {90,93,99,89,91,89,90,96,99,92};
 				respiratoryrateSensorInitialValues = new int[]{18,17,16,17,17,18,17,17,12,17};
 				break;
-//			case 5:	
-//				wingIdentifier = "WingF";
-//				heartrateSensorInitialValues = new int[]{80,63,90,75,80,70,77,82,75,68};
-//				bloodPressureSensorInitialValues = new int[] {129,61,99,87,57,107,109,57,137,99};
-//				o2SaturationSensorInitialValues = new int[]{100,95,98,93,100,92,93,94,97,97};
-//				respiratoryrateSensorInitialValues = new int[]{14,12,13,13,12,15,14,12,12,12};
-//				break;
-//			case 6:	
-//				wingIdentifier = "WingG";
-//				heartrateSensorInitialValues = new int[]{70,83,81,74,78,87,95,68,96,43};
-//				bloodPressureSensorInitialValues = new int[] {95,83,97,86,106,103,101,112,78,73};
-//				o2SaturationSensorInitialValues = new int[] {99,94,99,98,99,96,95,96,95,96};
-//				respiratoryrateSensorInitialValues = new int[]{14,15,14,17,15,18,13,17,15,17};
-//				break;
-//			case 7:	
-//				wingIdentifier = "WingH";
-//				heartrateSensorInitialValues = new int[]{70,73,80,92,96,93,88,70,70,83};
-//				bloodPressureSensorInitialValues = new int[] {117,114,102,68,102,67,66,65,50,53};
-//				o2SaturationSensorInitialValues = new int[] {96,95,98,97,100,95,99,95,95,96};
-//				respiratoryrateSensorInitialValues = new int[] {13,15,14,9,13,9,13,16,14,14};
-//				break;
-//			case 8:	
-//				wingIdentifier = "WingI";
-//				heartrateSensorInitialValues = new int[]{78,76,85,74,78,74,80,50,48,63};
-//				bloodPressureSensorInitialValues = new int[] {121,54,97,65,67,88,102,63,110,110};
-//				o2SaturationSensorInitialValues = new int[]{99,95,100,98,97,99,99,100,96,97};
-//				respiratoryrateSensorInitialValues = new int[]{14,14,12,14,14,13,14,13,12,15};
-//				break;
-//			case 9:	
-//				wingIdentifier = "WingJ";
-//				heartrateSensorInitialValues = new int[]{50,73,81,94,88,77,90,60,90,33};
-//				bloodPressureSensorInitialValues = new int[] {50,122,114,86,62,77,56,66,54,121};
-//				o2SaturationSensorInitialValues = new int[] {93,99,99,93,96,95,97,98,96,95};
-//				respiratoryrateSensorInitialValues = new int[]{15,13,12,12,13,13,15,12,15,15};
-//				break;
 			default:
 				wingIdentifier = "Invalid Wing";
 				break;
