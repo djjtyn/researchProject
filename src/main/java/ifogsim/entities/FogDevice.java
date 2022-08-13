@@ -679,7 +679,7 @@ public class FogDevice extends PowerDatacenter {
         	//If the priority of the request is anything other than p1 use serverless functions
         	if(!priorityLevel.equals("p1")) {
         		//Invoke a Lambda Function contained in LambdaInvoke class and return from event flow
-        		//LambdaInvoke.transmitTupleData(tuple.getSensorSourceName(), tuple.getTupleType(), tuple.getTupleValue(), module.getSNSTopicName());
+        		LambdaInvoke.transmitTupleData(tuple.getSensorSourceName(), tuple.getTupleType(), tuple.getTupleValue(), module.getSNSTopicName());
         		return;   		
         	}
         }
@@ -1150,13 +1150,4 @@ public class FogDevice extends PowerDatacenter {
 	  }
 	  return "p2";
   }
-  
-	public static HashMap<String, Object> createMapping(String sensorIdentifier , String sensorType, int sensorValue, String snsTopicName) {
-		HashMap<String, Object> mapping = new HashMap<>();
-		mapping.put("SensorIdentifier", sensorIdentifier);
-		mapping.put("SensorType", sensorType);
-		mapping.put("SensorValue", sensorValue);
-		mapping.put("snsTopicName", snsTopicName);
-		return mapping;
-	}
 }

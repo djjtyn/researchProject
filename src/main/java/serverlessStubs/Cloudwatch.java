@@ -21,12 +21,6 @@ import com.amazonaws.services.cloudwatch.model.GetMetricStatisticsResult;
 
 public class Cloudwatch {
 	
- 	//Wont need Main method
-//	public static void main(String [] args ) {
-//		double totalDuration = getDuration();	
-//		System.out.println("Lambda Total Duration: " + totalDuration);
-//	} 
-	
 	public static double getDuration(Date startDateTime) {
 		AmazonCloudWatch cw = createClient();	//Returns Cloudwatch client
 		//Create request to aggregate all lambda functions invoked from simulation start time

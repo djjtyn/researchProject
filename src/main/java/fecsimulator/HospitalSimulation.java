@@ -56,6 +56,7 @@ public class HospitalSimulation {
 	public static void startSim() {
 		Log.disable();
 		try {		
+
 			// Instantiate the Cloudsim class
 			int num_user = 1; // number of cloud users
 			Calendar calendar = Calendar.getInstance();
@@ -297,7 +298,7 @@ public class HospitalSimulation {
 			switch (i) {
 			case 0:
 				wingIdentifier = "WingA";
-				heartrateSensorInitialValues = new int[] {82, 45, 55, 65, 75, 85, 95, 105, 115, 40 };
+				heartrateSensorInitialValues = new int[] {82, 45, 55, 65, 75, 85, 95, 105, 115, 40};
 				bloodPressureSensorInitialValues = new int[] {66, 79, 73, 115, 78, 84, 70, 73, 134, 104};
 				o2SaturationSensorInitialValues = new int[] {98, 99, 99, 96, 93, 94, 93, 99, 97, 100};
 				respiratoryrateSensorInitialValues = new int[] {13, 14, 14, 16, 15, 13, 15, 13, 14, 13};
