@@ -41,9 +41,9 @@ import serverlessStubs.SNSTopic;
 
 public class HospitalSimulation {
 	
-	//Global variable so fog devices can determine if serverless functions are set to be used 
+	//Global variable so fog devices can determine if serverless functions have been integrated
 	public static boolean useServerless;
-	//Global variable to allow simulation start time to be retrieved from controller class
+	//Global variable to allow simulation start time to be retrieved from controller class at end of simulation
 	public static Date startTimeDate;
 	//Track latency of each simulation run to determine average
 	public static double  loopexecutionTime;
@@ -63,7 +63,11 @@ public class HospitalSimulation {
 			boolean trace_flag = false; 
 			CloudSim.init(num_user, calendar, trace_flag);		
 			String appId = "SmartHospital";
-			int numOfHospitalWings = 5;
+			int numOfHospitalWings = 0;
+			//Prompt user to determine how many hospital wings to use in the simulation
+			do {
+				numOfHospitalWings = determineAmountofHospitalWings();
+			} while (numOfHospitalWings <1 || numOfHospitalWings>5);
 			int numOfpatientsPerWing = 10;
 			String snsTopicName = "PatientMonitor";
 			
@@ -92,6 +96,13 @@ public class HospitalSimulation {
 			e.printStackTrace();
 			return;
 		}
+	}
+	
+	@SuppressWarnings("resource")
+	public static int determineAmountofHospitalWings() {
+		Scanner sc = new Scanner(System.in);
+		System.out.println("Please enter an amount of hopsital wings between 1 and 5 to integrate into the simulation");
+		return sc.nextInt();
 	}
 	
 	
