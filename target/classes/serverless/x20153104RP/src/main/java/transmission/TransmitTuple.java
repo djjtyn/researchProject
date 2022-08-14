@@ -41,7 +41,7 @@ public class TransmitTuple {
 		String sensorValue = (String)map.get("SensorValue");
 		//Publish a message with the sensor value and identifiers for emitting sensor and sensor type
 		PublishRequest request = new PublishRequest(topicArn,sensorValue).withMessageAttributes(createMessageAttribute(map));
-		//client.publish(request);
+		client.publish(request);
 	}
 	
 	public String createOrRetrieveTopicARN(AmazonSNS client, String topicName) {
